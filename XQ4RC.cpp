@@ -1,32 +1,35 @@
-ï»¿#include <QtGui/QtGui>
+#include <QtGui/QtGui>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 #include <QtSerialPort/QtSerialPort>
-//#include<opencv2/opencv.hpp>
+#include<opencv2/opencv.hpp>
 #include<spdlog/spdlog.h>
 using namespace std;
-//using namespace cv;
+using namespace cv;
+
+#define DISABLE 0
+#define ENABLE 1
 
 class XQ4RC : public QWidget
 {
 public:
 	struct XQFrameEx
 	{
-		int status; char c1;//å°è½¦çŠ¶æ€: 0æœªåˆå§‹åŒ–, 1æ­£å¸¸, -1è¡¨ç¤ºå¼‚å¸¸
-		float power; char c2;//ç”µæºç”µåŽ‹: 9~13V
-		float theta; char c3;//æ–¹ä½è§’:0~360Deg
-		int encoder_ppr; char c4;//è½¦è½®ä¸€è½¬å¯¹åº”çš„ç¼–ç å™¨ä¸ªæ•°
-		int encoder_delta_r; char c5;//å³è½®ç¼–ç å™¨å¢žé‡: å•ä½ä¸ª
-		int encoder_delta_l; char c6;//å·¦è½®ç¼–ç å™¨å¢žé‡: å•ä½ä¸ª
-		int encoder_delta_car; char c7;//ä¸¤è½¦è½®ä¸­å¿ƒä½ç§»: å•ä½ä¸ª
-		int omga_r; char c8;//å³è½®è½¬é€Ÿ: ä¸ªæ¯ç§’
-		int omga_l; char c9;//å·¦è½®è½¬é€Ÿ: ä¸ªæ¯ç§’
-		float distance1; char c10;//ç¬¬ä¸€ä¸ªè¶…å£°æ¨¡å—è·ç¦»å€¼: å•ä½cm
-		float distance2; char c11;//ç¬¬äºŒä¸ªè¶…å£°æ¨¡å—è·ç¦»å€¼: å•ä½cm
-		float distance3; char c12;//ç¬¬ä¸‰ä¸ªè¶…å£°æ¨¡å—è·ç¦»å€¼: å•ä½cm
-		float distance4; char c13;//ç¬¬å››ä¸ªè¶…å£°æ¨¡å—è·ç¦»å€¼: å•ä½cm
-		float _imudata[45];//mpu9250 9è½´æ•°æ®
-		uint timestamp; char c23;//æ—¶é—´æˆ³
+		int status; char c1;//Ð¡³µ×´Ì¬: 0Î´³õÊ¼»¯, 1Õý³£, -1±íÊ¾Òì³£
+		float power; char c2;//µçÔ´µçÑ¹: 9~13V
+		float theta; char c3;//·½Î»½Ç:0~360Deg
+		int encoder_ppr; char c4;//³µÂÖÒ»×ª¶ÔÓ¦µÄ±àÂëÆ÷¸öÊý
+		int encoder_delta_r; char c5;//ÓÒÂÖ±àÂëÆ÷ÔöÁ¿: µ¥Î»¸ö
+		int encoder_delta_l; char c6;//×óÂÖ±àÂëÆ÷ÔöÁ¿: µ¥Î»¸ö
+		int encoder_delta_car; char c7;//Á½³µÂÖÖÐÐÄÎ»ÒÆ: µ¥Î»¸ö
+		int omga_r; char c8;//ÓÒÂÖ×ªËÙ: ¸öÃ¿Ãë
+		int omga_l; char c9;//×óÂÖ×ªËÙ: ¸öÃ¿Ãë
+		float distance1; char c10;//µÚÒ»¸ö³¬ÉùÄ£¿é¾àÀëÖµ: µ¥Î»cm
+		float distance2; char c11;//µÚ¶þ¸ö³¬ÉùÄ£¿é¾àÀëÖµ: µ¥Î»cm
+		float distance3; char c12;//µÚÈý¸ö³¬ÉùÄ£¿é¾àÀëÖµ: µ¥Î»cm
+		float distance4; char c13;//µÚËÄ¸ö³¬ÉùÄ£¿é¾àÀëÖµ: µ¥Î»cm
+		float _imudata[45];//mpu9250 9ÖáÊý¾Ý
+		uint timestamp; char c23;//Ê±¼ä´Á
 		float* ImuData[9] = { _imudata, _imudata + 5, _imudata + 10, _imudata + 15, _imudata + 20, _imudata + 25, _imudata + 30, _imudata + 35, _imudata + 40 };
 		string print(string savePath = "")
 		{
@@ -85,29 +88,177 @@ private:
 	const int dataSize = 23 * 5;
 	const int frameSize = dataSize + 4;
 	const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
+//	void sport_readyRead()
+//	{
+//#if 0
+//		//serArr.push_back(sport.readAll());
+//		//char* data;
+//		//if (serArr.size() > 1000)
+//		//{
+//		//	data = serArr.data();
+//		//	cout << endl << 123 << endl;
+//		//	getchar();
+//		//}
+//		//int x = 5;
+//
+//#else
+//		//1.Reset system
+//		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; lastHeadPos = -1; }
+//		//2.Read serialport
+//		serArr.push_back(sport.readAll());
+//		//3.No need to read if less than one frame
+//		if (serArr.size() < readPos + frameSize) return;
+//		//4.Find data head
+//		int k = lastHeadPos;
+//		if (k == -1)
+//		{
+//			k = readPos;
+//			for (; k < serArr.size(); ++k)
+//			{
+//				if (serArr[k] != heads[0]) continue;
+//				if (serArr[k + 1] != heads[1]) continue;
+//				if (serArr[k + 2] != heads[2]) continue;
+//				break;
+//			}
+//		}
+//		//5.No need to read if less than one frame
+//		if (serArr.size() - k < dataSize)
+//		{
+//			lastHeadPos = k;
+//			cout << endl << k << endl;
+//			return;
+//		}
+//		//6.
+//		XQFrameEx frame;
+//		memcpy(&frame, serArr.data() + k + 4, dataSize);
+//		readPos = k + frameSize;
+//		lastHeadPos = -1;
+//		plainTextEditCarStatus->setPlainText(frame.print().c_str());
+//		cout << endl << frame.print() << endl << endl;
+//#endif
+//	}
+
 	void sport_readyRead()
 	{
-#if 1
-		//serArr.push_back(sport.readAll());
-		//char* data;
-		//if (serArr.size() > 1000)
-		//{
-		//	data = serArr.data();
-		//	cout << endl << 123 << endl;
-		//	getchar();
-		//}
-		//int x = 5;
+		int i = 0, j = 0;
+		int* receive_byte;
+		static unsigned char last_str[2] = { 0x00, 0x00 };
+		static unsigned char new_packed_ctr = DISABLE; //ENABLE±íÊ¾ÐÂ°ü¿ªÊ¼£¬DISABLE ±íÊ¾ÉÏÒ»¸ö°ü»¹Î´´¦ÀíÍê£»
+		static int new_packed_ok_len = 0;              //°üµÄÀíÂÛ³¤¶È
+		static int new_packed_len = 0;                 //°üµÄÊµ¼Ê³¤¶È
+		static unsigned char cmd_string_buf[512];
+		unsigned char current_str = 0x00;
+		const int cmd_string_max_size = 512;
+		receive_byte = (int*)&car_status;
+		//int ii=0;
+		//boost::mutex::scoped_lock lock(mMutex);
 
-#else
+		// if(len<119)
+		// {
+		// std::cout<<"len0:"<<len<<std::endl;
+		//   current_str=data[0];
+		//   std::cout<<(unsigned int)current_str<<std::endl;
+		// }
+		for (i = 0; i < len; i++)
+		{
+			current_str = data[i];
+			// unsigned int temp=(unsigned int)current_str;
+			// std::cout<<temp<<std::endl;
+			//ÅÐ¶ÏÊÇ·ñÓÐÐÂ°üÍ·
+			if (last_str[0] == 205 && last_str[1] == 235 && current_str == 215) //°üÍ· 205 235 215
+			{
+				//std::cout<<"runup1 "<<std::endl;
+				new_packed_ctr = ENABLE;
+				new_packed_ok_len = 0;
+				new_packed_len = new_packed_ok_len;
+				last_str[0] = last_str[1]; //±£´æ×îºóÁ½¸ö×Ö·û£¬ÓÃÀ´È·¶¨°üÍ·
+				last_str[1] = current_str;
+				continue;
+			}
+			last_str[0] = last_str[1]; //±£´æ×îºóÁ½¸ö×Ö·û£¬ÓÃÀ´È·¶¨°üÍ·
+			last_str[1] = current_str;
+			if (new_packed_ctr == ENABLE)
+			{
+
+				//»ñÈ¡°ü³¤¶È
+				new_packed_ok_len = current_str;
+				if (new_packed_ok_len > cmd_string_max_size)
+					new_packed_ok_len = cmd_string_max_size; //°üÄÚÈÝ×î´ó³¤¶ÈÓÐÏÞÖÆ
+				new_packed_ctr = DISABLE;
+				//std::cout<<"runup2 "<< new_packed_len<< new_packed_ok_len<<std::endl;
+			}
+			else
+			{
+				//ÅÐ¶Ï°üµ±Ç°´óÐ¡
+				if (new_packed_ok_len <= new_packed_len)
+				{
+					//std::cout<<"runup3 "<< new_packed_len<< new_packed_ok_len<<std::endl;
+					//°ü³¤¶ÈÒÑ¾­´óÓÚµÈÓÚÀíÂÛ³¤¶È£¬ºóÐøÄÚÈÝÎÞÐ§
+					continue;
+				}
+				else
+				{
+					//»ñÈ¡°üÄÚÈÝ
+					new_packed_len++;
+					cmd_string_buf[new_packed_len - 1] = current_str;
+					if (new_packed_ok_len == new_packed_len && new_packed_ok_len > 0)
+					{
+						// std::cout<<"runup4 "<<std::endl;
+						//µ±Ç°°üÒÑ¾­´¦ÀíÍê³É£¬¿ªÊ¼´¦Àí
+						if (new_packed_ok_len == 115)
+						{
+							for (j = 0; j < 23; j++)
+							{
+								memcpy(&receive_byte[j], &cmd_string_buf[5 * j], 4);
+							}
+							mbUpdated = true;
+						}
+						else if (new_packed_ok_len == 95)
+						{
+							for (j = 0; j < 19; j++)
+							{
+								memcpy(&receive_byte[j], &cmd_string_buf[5 * j], 4);
+							}
+							mbUpdated = true;
+						}
+						if (mbUpdated)
+						{
+							for (j = 0; j < 7; j++)
+							{
+								if (cmd_string_buf[5 * j + 4] != 32)
+								{
+									//   std::cout<<"len:"<< len <<std::endl;
+									//   std::cout<<"delta_encoder_car:"<< car_status.encoder_delta_car <<std::endl;
+									//   for(j=0;j<115;j++)
+									//   {
+									//     current_str=cmd_string_buf[j];
+									//     std::cout<<(unsigned int)current_str<<std::endl;
+									//   }
+									mbUpdated = false;
+									car_status.encoder_ppr = 4 * 12 * 64;
+									break;
+								}
+							}
+						}
+						if (mbUpdated)
+						{
+							base_time_ = ros::Time::now().toSec();
+						}
+						new_packed_ok_len = 0;
+						new_packed_len = 0;
+					}
+				}
+			}
+		}
+
+
+		return;
 		//1.Reset system
 		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; lastHeadPos = -1; }
-
 		//2.Read serialport
 		serArr.push_back(sport.readAll());
-
 		//3.No need to read if less than one frame
 		if (serArr.size() < readPos + frameSize) return;
-
 		//4.Find data head
 		int k = lastHeadPos;
 		if (k == -1)
@@ -121,22 +272,20 @@ private:
 				break;
 			}
 		}
-
 		//5.No need to read if less than one frame
-		if (serArr.size() - k < dataSize) 
-		{ 
-			lastHeadPos = k; 
+		if (serArr.size() - k < dataSize)
+		{
+			lastHeadPos = k;
 			cout << endl << k << endl;
-			return; 
+			return;
 		}
-
 		//6.
 		XQFrameEx frame;
 		memcpy(&frame, serArr.data() + k + 4, dataSize);
 		readPos = k + frameSize;
 		lastHeadPos = -1;
+		plainTextEditCarStatus->setPlainText(frame.print().c_str());
 		cout << endl << frame.print() << endl << endl;
-#endif
 	}
 
 public:
