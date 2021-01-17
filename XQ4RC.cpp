@@ -80,7 +80,6 @@ private:
 private:
 	QByteArray serArr;
 	int readPos = 0;
-	int lastPos = -1;
 	const int headSize = 4;
 	const int itemSize = sizeof(int);
 	const int itemSizeEx = itemSize + 1;
@@ -91,12 +90,12 @@ private:
 	void sport_readyRead()
 	{
 		//1.Reset system
-		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; lastPos = -1; }
+		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; }
 
 		//2.Read serialport
 		serArr.push_back(sport.readAll());
 
-		//3.No need to read if less than one frame
+		//3.No need to read if less than one full frame
 		if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); return; }
 		if (serArr.size() < 2 * frameSize) { spdlog::warn("Intial frameSize must be double for maxArrSize switch"); return; }
 
@@ -117,7 +116,10 @@ private:
 			break;
 		}
 
-		//5.Read data
+		//5.No need to read if less than one data frame
+		if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); return; }
+
+		//6.Read data
 		XQFrame frame;
 		for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
 		readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
