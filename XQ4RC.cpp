@@ -98,36 +98,29 @@ private:
 
 		//3.No need to read if less than one frame
 		if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); return; }
+		if (serArr.size() < 2 * frameSize) { spdlog::warn("Intial frameSize must be double for maxArrSize switch"); return; }
 
 		//4.Find data head
-		int curPos = lastPos;
-		if (curPos == -1) //This means that one full frame are read last time
+		int curPos = readPos;
+		for (; curPos < serArr.size(); ++curPos)
 		{
-			curPos = readPos;
-			for (; curPos < serArr.size(); ++curPos)
-			{
 #if 1
-				if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
-					(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
-					(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
-					spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
+			if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
+				(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
+				(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
+				spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
 #endif
-				if (serArr[curPos] != heads[0]) continue;
-				if (serArr[curPos + 1] != heads[1]) continue;
-				if (serArr[curPos + 2] != heads[2]) continue;
-				curPos += headSize;//Let curPos be dataPos if find the header
-				break;
-			}
+			if (serArr[curPos] != heads[0]) continue;
+			if (serArr[curPos + 1] != heads[1]) continue;
+			if (serArr[curPos + 2] != heads[2]) continue;
+			curPos += headSize;//Let curPos be dataPos if find the header
+			break;
 		}
 
-		//5.No need to read if less than one frame
-		if (serArr.size() < curPos + dataSize) { lastPos = curPos; spdlog::warn("dataSize is small and this should not occur often"); return; }
-
-		//6.Read data
+		//5.Read data
 		XQFrame frame;
 		for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
-		readPos = curPos + dataSize;
-		lastPos = -1; //cout << endl << frame.print() << endl << endl;
+		readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
 		plainTextEditCarStatus->setPlainText(frame.print().c_str());
 	}
 
