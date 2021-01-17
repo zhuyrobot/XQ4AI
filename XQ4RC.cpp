@@ -5,72 +5,28 @@
 #include<opencv2/opencv.hpp>
 #include<spdlog/spdlog.h>
 using namespace std;
-using namespace cv;
-
-#define DISABLE 0
-#define ENABLE 1
+//using namespace cv;
 
 class XQ4RC : public QWidget
 {
 public:
-	//struct XQFrameEx
-	//{
-	//	int status; char c1;//小车状态: 0未初始化, 1正常, -1表示异常
-	//	float power; char c2;//电源电压: 9~13V
-	//	float theta; char c3;//方位角:0~360Deg
-	//	int encoder_ppr; char c4;//车轮一转对应的编码器个数
-	//	int encoder_delta_r; char c5;//右轮编码器增量: 单位个
-	//	int encoder_delta_l; char c6;//左轮编码器增量: 单位个
-	//	int encoder_delta_car; char c7;//两车轮中心位移: 单位个
-	//	int omga_r; char c8;//右轮转速: 个每秒
-	//	int omga_l; char c9;//左轮转速: 个每秒
-	//	float distance1; char c10;//第一个超声模块距离值: 单位cm
-	//	float distance2; char c11;//第二个超声模块距离值: 单位cm
-	//	float distance3; char c12;//第三个超声模块距离值: 单位cm
-	//	float distance4; char c13;//第四个超声模块距离值: 单位cm
-	//	float _imudata[45];//mpu9250 9轴数据
-	//	uint timestamp; char c23;//时间戳
-	//	float* ImuData[9] = { _imudata, _imudata + 5, _imudata + 10, _imudata + 15, _imudata + 20, _imudata + 25, _imudata + 30, _imudata + 35, _imudata + 40 };
-	//	string print(string savePath = "")
-	//	{
-	//		string str;
-	//		str += fmt::format("status: {}\n", status);
-	//		str += fmt::format("power: {}\n", power);
-	//		str += fmt::format("theta: {}\n", theta);
-	//		str += fmt::format("encoder_ppr: {}\n", encoder_ppr);
-	//		str += fmt::format("encoder_delta_r: {}\n", encoder_delta_r);
-	//		str += fmt::format("encoder_delta_l: {}\n", encoder_delta_l);
-	//		str += fmt::format("encoder_delta_car: {}\n", encoder_delta_car);
-	//		str += fmt::format("omga_r: {}\n", omga_r);
-	//		str += fmt::format("omga_l: {}\n", omga_l);
-	//		str += fmt::format("distance1: {}\n", distance1);
-	//		str += fmt::format("distance2: {}\n", distance2);
-	//		str += fmt::format("distance3: {}\n", distance3);
-	//		str += fmt::format("distance4: {}\n", distance4);
-	//		for (int k = 0; k < 9; ++k) str += fmt::format("IMUData[{}]: {}\n", k, *(ImuData[k]));
-	//		str += fmt::format("timestamp: {}\n", timestamp);
-	//		return str;
-	//	}
-	//};
-
-	typedef struct
+	struct XQFrame
 	{
-		int status;              //小车状态，0表示未初始化，1表示正常，-1表示error
-		float power;             //电源电压【9 13】v
-		float theta;             //方位角，【0 360）°
-		int encoder_ppr;         //车轮1转对应的编码器个数
-		int encoder_delta_r;     //右轮编码器增量， 个为单位
-		int encoder_delta_l;     //左轮编码器增量， 个为单位
-		int encoder_delta_car;   //两车轮中心位移，个为单位
-		int omga_r;              //右轮转速 个每秒
-		int omga_l;              //左轮转速 个每秒
-		float distance1;         //第一个超声模块距离值 单位cm
-		float distance2;         //第二个超声模块距离值 单位cm
-		float distance3;         //第三个超声模块距离值 单位cm
-		float distance4;         //第四个超声模块距离值 单位cm
-		float IMU[9];            //mpu9250 9轴数据
-		unsigned int time_stamp; //时间戳
-
+		int status;//小车状态: 0未初始化, 1正常, -1表示异常
+		float power;//电源电压: 9~13V
+		float theta;//方位角:0~360Deg
+		int encoder_ppr;//车轮一转对应的编码器个数
+		int encoder_delta_r;//右轮编码器增量: 单位个
+		int encoder_delta_l;//左轮编码器增量: 单位个
+		int encoder_delta_car;//两车轮中心位移: 单位个
+		int omga_r;//右轮转速: 个每秒
+		int omga_l;//左轮转速: 个每秒
+		float distance1;//第一个超声模块距离值: 单位cm
+		float distance2;//第二个超声模块距离值: 单位cm
+		float distance3;//第三个超声模块距离值: 单位cm
+		float distance4;//第四个超声模块距离值: 单位cm
+		float imudata[9];//mpu9250 9轴数据
+		uint timestamp;//时间戳
 		string print(string savePath = "")
 		{
 			string str;
@@ -87,11 +43,11 @@ public:
 			str += fmt::format("distance2: {}\n", distance2);
 			str += fmt::format("distance3: {}\n", distance3);
 			str += fmt::format("distance4: {}\n", distance4);
-			for (int k = 0; k < 9; ++k) str += fmt::format("IMUData[{}]: {}\n", k, IMU[k]);
-			str += fmt::format("timestamp: {}\n", time_stamp);
+			for (int k = 0; k < 9; ++k) str += fmt::format("imudata[{}]: {}\n", k, imudata[k]);
+			str += fmt::format("timestamp: {}\n", timestamp);
 			return str;
 		}
-	} UPLOAD_STATUS;
+	};
 
 private:
 	QSerialPort sport;
@@ -124,170 +80,56 @@ private:
 private:
 	QByteArray serArr;
 	int readPos = 0;
-	int lastHeadPos = -1;
-	const int dataSize = 23 * 5;
-	const int frameSize = dataSize + 4;
+	int lastPos = -1;
+	const int headSize = 4;
+	const int itemSize = sizeof(int);
+	const int itemSizeEx = itemSize + 1;
+	const int itemCount = sizeof(XQFrame) / itemSize;
+	const int dataSize = itemCount * itemSizeEx;
+	const int frameSize = dataSize + headSize;
 	const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
-//	void sport_readyRead()
-//	{
-//#if 0
-//		//serArr.push_back(sport.readAll());
-//		//char* data;
-//		//if (serArr.size() > 1000)
-//		//{
-//		//	data = serArr.data();
-//		//	cout << endl << 123 << endl;
-//		//	getchar();
-//		//}
-//		//int x = 5;
-//
-//#else
-//		//1.Reset system
-//		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; lastHeadPos = -1; }
-//		//2.Read serialport
-//		serArr.push_back(sport.readAll());
-//		//3.No need to read if less than one frame
-//		if (serArr.size() < readPos + frameSize) return;
-//		//4.Find data head
-//		int k = lastHeadPos;
-//		if (k == -1)
-//		{
-//			k = readPos;
-//			for (; k < serArr.size(); ++k)
-//			{
-//				if (serArr[k] != heads[0]) continue;
-//				if (serArr[k + 1] != heads[1]) continue;
-//				if (serArr[k + 2] != heads[2]) continue;
-//				break;
-//			}
-//		}
-//		//5.No need to read if less than one frame
-//		if (serArr.size() - k < dataSize)
-//		{
-//			lastHeadPos = k;
-//			cout << endl << k << endl;
-//			return;
-//		}
-//		//6.
-//		XQFrameEx frame;
-//		memcpy(&frame, serArr.data() + k + 4, dataSize);
-//		readPos = k + frameSize;
-//		lastHeadPos = -1;
-//		plainTextEditCarStatus->setPlainText(frame.print().c_str());
-//		cout << endl << frame.print() << endl << endl;
-//#endif
-//	}
-
 	void sport_readyRead()
 	{
-		UPLOAD_STATUS car_status;
-		bool mbUpdated = false;
+		//1.Reset system
+		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; lastPos = -1; }
 
 		//2.Read serialport
 		serArr.push_back(sport.readAll());
-		int len = serArr.size();
 
-		int i = 0, j = 0;
-		int* receive_byte;
-		static unsigned char last_str[2] = { 0x00, 0x00 };
-		static unsigned char new_packed_ctr = DISABLE; //ENABLE表示新包开始，DISABLE 表示上一个包还未处理完；
-		static int new_packed_ok_len = 0;              //包的理论长度
-		static int new_packed_len = 0;                 //包的实际长度
-		static unsigned char cmd_string_buf[512];
-		unsigned char current_str = 0x00;
-		const int cmd_string_max_size = 512;
-		receive_byte = (int*)&car_status;
+		//3.No need to read if less than one frame
+		if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); return; }
 
-		for (i = 0; i < len; i++)
+		//4.Find data head
+		int curPos = lastPos;
+		if (curPos == -1) //This means that one full frame are read last time
 		{
-			current_str = serArr[i];
-
-			//判断是否有新包头
-			if (last_str[0] == 205 && last_str[1] == 235 && current_str == 215) //包头 205 235 215
+			curPos = readPos;
+			for (; curPos < serArr.size(); ++curPos)
 			{
-				//std::cout<<"runup1 "<<std::endl;
-				new_packed_ctr = ENABLE;
-				new_packed_ok_len = 0;
-				new_packed_len = new_packed_ok_len;
-				last_str[0] = last_str[1]; //保存最后两个字符，用来确定包头
-				last_str[1] = current_str;
-				continue;
-			}
-			last_str[0] = last_str[1]; //保存最后两个字符，用来确定包头
-			last_str[1] = current_str;
-			if (new_packed_ctr == ENABLE)
-			{
-
-				//获取包长度
-				new_packed_ok_len = current_str;
-				if (new_packed_ok_len > cmd_string_max_size)
-					new_packed_ok_len = cmd_string_max_size; //包内容最大长度有限制
-				new_packed_ctr = DISABLE;
-				//std::cout<<"runup2 "<< new_packed_len<< new_packed_ok_len<<std::endl;
-			}
-			else
-			{
-				//判断包当前大小
-				if (new_packed_ok_len <= new_packed_len)
-				{
-					//std::cout<<"runup3 "<< new_packed_len<< new_packed_ok_len<<std::endl;
-					//包长度已经大于等于理论长度，后续内容无效
-					continue;
-				}
-				else
-				{
-					//获取包内容
-					new_packed_len++;
-					cmd_string_buf[new_packed_len - 1] = current_str;
-					if (new_packed_ok_len == new_packed_len && new_packed_ok_len > 0)
-					{
-						// std::cout<<"runup4 "<<std::endl;
-						//当前包已经处理完成，开始处理
-						if (new_packed_ok_len == 115)
-						{
-							for (j = 0; j < 23; j++)
-							{
-								memcpy(&receive_byte[j], &cmd_string_buf[5 * j], 4);
-							}
-							mbUpdated = true;
-						}
-
-						if (mbUpdated)
-						{
-							for (j = 0; j < 7; j++)
-							{
-								if (cmd_string_buf[5 * j + 4] != 32)
-								{
-									//   std::cout<<"len:"<< len <<std::endl;
-									//   std::cout<<"delta_encoder_car:"<< car_status.encoder_delta_car <<std::endl;
-									//   for(j=0;j<115;j++)
-									//   {
-									//     current_str=cmd_string_buf[j];
-									//     std::cout<<(unsigned int)current_str<<std::endl;
-									//   }
-									mbUpdated = false;
-									car_status.encoder_ppr = 4 * 12 * 64;
-									break;
-								}
-							}
-							if (mbUpdated)
-							{
-								plainTextEditCarStatus->setPlainText(car_status.print().c_str());
-								cout << endl << car_status.print() << endl << endl;
-							}
-						}
-						//if (mbUpdated)
-						//{
-						//	base_time_ = ros::Time::now().toSec();
-						//}
-						new_packed_ok_len = 0;
-						new_packed_len = 0;
-					}
-				}
+#if 1
+				if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
+					(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
+					(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
+					spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
+#endif
+				if (serArr[curPos] != heads[0]) continue;
+				if (serArr[curPos + 1] != heads[1]) continue;
+				if (serArr[curPos + 2] != heads[2]) continue;
+				curPos += headSize;//Let curPos be dataPos if find the header
+				break;
 			}
 		}
-	}
 
+		//5.No need to read if less than one frame
+		if (serArr.size() < curPos + dataSize) { lastPos = curPos; spdlog::warn("dataSize is small and this should not occur often"); return; }
+
+		//6.Read data
+		XQFrame frame;
+		for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
+		readPos = curPos + dataSize;
+		lastPos = -1; //cout << endl << frame.print() << endl << endl;
+		plainTextEditCarStatus->setPlainText(frame.print().c_str());
+	}
 
 public:
 	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4RC me; me.show(); app.exec(); }
@@ -390,6 +232,7 @@ public:
 				});
 		}
 	}
+
 public:
 	QGridLayout* gridLayoutMain = new QGridLayout(this);
 	QComboBox* comboBoxPorts = new QComboBox(this);
@@ -414,4 +257,5 @@ public:
 	QPushButton* pushButtonEnableROS2 = new QPushButton("Start ROS2", this);
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
 };
+
 int main(int argc, char** argv) { XQ4RC::RunMe(argc, argv); return 0; }
