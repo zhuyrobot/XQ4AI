@@ -1,12 +1,4 @@
-﻿#include <cscv/macxx.h>
-#include <QtGui/QtGui>
-#include <QtCore/QtCore>
-#include <QtWidgets/QtWidgets>
-#include <QtSerialPort/QtSerialPort>
-#include<opencv2/opencv.hpp>
-#include<spdlog/spdlog.h>
-using namespace std;
-//using namespace cv;
+﻿#include "XQ4IO.h"
 
 class XQ4RC : public QWidget
 {
