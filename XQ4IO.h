@@ -231,9 +231,14 @@ private:
 			if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); continue; }
 
 			//5.Read data
-			XQ4IO::XQFrame frame;
-			for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
-			readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
+			XQ4IO::XQFrame* frame;
+			int64 tsPos = cirFrames.lockWritten(&frame);
+			if (tsPos != -1)
+			{
+				for (int k = 0; k < itemCount; ++k) memcpy((int*)frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
+				readPos = curPos + dataSize; //cout << endl << frame->print() << endl << endl;
+				cirFrames.unlockWritten(tsPos);
+			}
 
 			//6.Explosion protection
 			if (serArr.size() > maxArrSize) 

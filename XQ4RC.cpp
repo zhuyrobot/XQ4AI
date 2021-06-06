@@ -84,6 +84,7 @@ public:
 				{
 					if (ioXQ.opened())
 					{
+						timerCarStatus->stop();
 						ioXQ.close();
 						pushButtonOpen->setText("Open");
 						spdlog::info("{} closed with success", ioXQ.name());
@@ -94,6 +95,7 @@ public:
 						{
 							pushButtonOpen->setText("Close");
 							spdlog::info("{} openned with success", ioXQ.name());
+							timerCarStatus->start(200);
 						}
 						else
 						{
@@ -109,7 +111,6 @@ public:
 					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
 				});
-			timerCarStatus->start(200);
 		}
 	}
 
