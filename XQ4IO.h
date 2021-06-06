@@ -125,28 +125,32 @@ public:
 			return str;
 		}
 	};
-	CirArr<XQFrame> cirFrames;
 
 private://1.Device
 	string sname;
 	asio::io_service io;
 	asio::serial_port sport = asio::serial_port(io);
+	bool keeping = false;
+	int64 msTimeout = 10;
+	CirArr<XQFrame> cirFrames;
 
 public://2.Config
 	inline bool open(string spname)
 	{
 		sport.open(sname = spname);
 		if (!sport.is_open()) return false;
+		cirFrames.init();
 		using namespace asio;
 		sport.set_option(serial_port::baud_rate(115200));
 		sport.set_option(serial_port::character_size(8));
 		sport.set_option(serial_port::stop_bits(serial_port::stop_bits::one));
 		sport.set_option(serial_port::parity(serial_port::parity::none));
 		sport.set_option(serial_port::flow_control(serial_port::flow_control::none));
-		return true;
+		std::thread(&XQ4IO::read2decode, this).detach();
+		return keeping = true;
 	}
 	inline bool opened() { return sport.is_open(); }
-	inline void close() { sport.close(); }
+	inline void close() { keeping = false; this_thread::sleep_for(1000ms); cirFrames.deinit(); sport.close(); }
 	inline string name() { return sname; }
 
 public://3.Write
@@ -176,5 +180,70 @@ public://3.Write
 		asio::write(sport, asio::buffer(data, action == 0 ? 5 : 6));
 	}
 
-public://4.Read
+	inline bool getStatus(XQFrame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }
+
+private:
+	void read2decode()
+	{
+
+		vector<char> serArr;
+		int readPos = 0;
+		const int headSize = 4;
+		const int itemSize = sizeof(int);
+		const int itemSizeEx = itemSize + 1;
+		const int itemCount = sizeof(XQ4IO::XQFrame) / itemSize;
+		const int dataSize = itemCount * itemSizeEx;
+		const int frameSize = dataSize + headSize;
+		const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
+		const int maxBufSize = 2 * sizeof(XQFrame) + 8;
+		char bufReader[maxBufSize];
+		while (keeping)
+		{
+			this_thread::sleep_for(chrono::milliseconds(msTimeout));
+			//1.Read serialport
+			error_code ec;
+			int num = sport.read_some(asio::buffer(bufReader, maxBufSize), ec);
+			if (num == 0) spdlog::error("code: {}\tmsg: {}", ec.value(), ec.message());
+			else for (int k = 0; k < num; ++k) serArr.push_back(bufReader[k]);
+
+			//2.No need to read if less than one full frame
+			if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); continue; }
+			if (serArr.size() < 2 * frameSize) { spdlog::warn("Intial frameSize must be double for maxArrSize switch"); continue; }
+
+			//3.Find data head
+			int curPos = readPos;
+			for (; curPos < serArr.size(); ++curPos)
+			{
+#if 1
+				if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
+					(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
+					(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
+					spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
+#endif
+				if (serArr[curPos] != heads[0]) continue;
+				if (serArr[curPos + 1] != heads[1]) continue;
+				if (serArr[curPos + 2] != heads[2]) continue;
+				curPos += headSize;//Let curPos be dataPos if find the header
+				break;
+			}
+
+			//4.No need to read if less than one data frame
+			if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); continue; }
+
+			//5.Read data
+			XQ4IO::XQFrame frame;
+			for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
+			readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
+
+			//6.Explosion protection
+			if (serArr.size() > maxArrSize) 
+			{ 
+				int len = serArr.size() - readPos;
+				vector<char> remains(len);
+				memcpy(remains.data(), serArr.data() + readPos, sizeof(char) * len);
+				serArr = remains;
+				readPos = 0; 
+			}
+		}
+	}
 };

@@ -8,57 +8,6 @@ class XQ4RC : public QWidget
 {
 public:
 	XQ4IO ioXQ;
-	const char *heads = ioXQ.heads;
-	QSerialPort sport;
-
-private:
-	QByteArray serArr;
-	int readPos = 0;
-	const int headSize = 4;
-	const int itemSize = sizeof(int);
-	const int itemSizeEx = itemSize + 1;
-	const int itemCount = sizeof(XQ4IO::XQFrame) / itemSize;
-	const int dataSize = itemCount * itemSizeEx;
-	const int frameSize = dataSize + headSize;
-	const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
-	void sport_readyRead()
-	{
-		//1.Reset system
-		if (serArr.size() > maxArrSize) { serArr.clear(); readPos = 0; }
-
-		//2.Read serialport
-		serArr.push_back(sport.readAll());
-
-		//3.No need to read if less than one full frame
-		if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); return; }
-		if (serArr.size() < 2 * frameSize) { spdlog::warn("Intial frameSize must be double for maxArrSize switch"); return; }
-
-		//4.Find data head
-		int curPos = readPos;
-		for (; curPos < serArr.size(); ++curPos)
-		{
-#if 1
-			if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
-				(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
-				(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
-				spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
-#endif
-			if (serArr[curPos] != heads[0]) continue;
-			if (serArr[curPos + 1] != heads[1]) continue;
-			if (serArr[curPos + 2] != heads[2]) continue;
-			curPos += headSize;//Let curPos be dataPos if find the header
-			break;
-		}
-
-		//5.No need to read if less than one data frame
-		if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); return; }
-
-		//6.Read data
-		XQ4IO::XQFrame frame;
-		for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
-		readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
-		plainTextEditCarStatus->setPlainText(frame.print().c_str());
-	}
 
 public:
 	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4RC me; me.show(); app.exec(); }
@@ -68,7 +17,6 @@ public:
 		this->setWindowTitle("Super Cube");
 		this->setMinimumSize(QSize(1280, 720));
 		this->setFont(QFont("", 15, QFont::Thin));
-		connect(&sport, &QSerialPort::readyRead, this, &XQ4RC::sport_readyRead);
 
 		//1.Group1 setting
 		gridLayoutMain->addWidget(comboBoxPorts, 0, 0, 1, 2);
@@ -154,6 +102,14 @@ public:
 						}
 					}
 				});
+			connect(timerCarStatus, &QTimer::timeout, [this]()->void 
+				{
+					XQ4IO::XQFrame* msg = 0;
+					ioXQ.getStatus(&msg);
+					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
+					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
+				});
+			timerCarStatus->start(200);
 		}
 	}
 
@@ -180,6 +136,7 @@ public:
 	QPushButton* pushButtonMinusMotors = new QPushButton("Minus motors", this);
 	QPushButton* pushButtonEnableROS2 = new QPushButton("Start ROS2", this);
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
+	QTimer* timerCarStatus = new QTimer(this);
 };
 
 int main(int argc, char** argv) { XQ4RC::RunMe(argc, argv); return 0; }
