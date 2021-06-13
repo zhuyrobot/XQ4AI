@@ -1,0 +1,15 @@
+int32 status
+float32 power
+float32 theta
+int32 encoder_ppr
+int32 encoder_delta_r
+int32 encoder_delta_l
+int32 encoder_delta_car
+int32 omga_r
+int32 omga_l
+float32 distance1
+float32 distance2
+float32 distance3
+float32 distance4
+float32[9] imudata
+uint32 timestamp
