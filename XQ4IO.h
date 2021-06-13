@@ -137,8 +137,9 @@ private://1.Device
 public://2.Config
 	inline bool open(string spname)
 	{
-		sport.open(sname = spname);
-		if (!sport.is_open()) return false;
+		error_code ec;
+		sport.open(sname = spname, ec);
+		if (ec.value() != 0) return false;
 		cirFrames.init();
 		using namespace asio;
 		sport.set_option(serial_port::baud_rate(115200));
