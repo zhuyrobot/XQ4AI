@@ -174,7 +174,7 @@ public://3.Write
 		char data[13] = { heads[0], heads[1], heads[2], char(0x09), char(0x74), action1, action2, 0x53, 0x53, velocity1, velocity2, char(0x00), char(0x00) };
 		asio::write(sport, asio::buffer(data, 13));
 	}
-	inline void runSensor(int action/*0=CalibIMU 1=EnableIMU 2=DisableIMU*/)
+	inline void runSensor(int action/*0=CalibIMU 1=EnableIR 2=DisableIR*/)
 	{
 		if (!sport.is_open()) { spdlog::critical("Serial port not openned: action={}", action == 0 ? "CalibIMU" : action == 1 ? "EnableIR" : "DisableIR"); return; }
 		char data[6] = { heads[0], heads[1], heads[2], action == 0 ? char(0x01) : char(0x02), action == 0 ? char(0x43) : char(0x44), action == 2 ? char(0x00) : char(0x01) };
@@ -186,7 +186,6 @@ public://3.Write
 private:
 	void read2decode()
 	{
-
 		vector<char> serArr;
 		int readPos = 0;
 		const int headSize = 4;

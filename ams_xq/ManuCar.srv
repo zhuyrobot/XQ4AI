@@ -1,8 +1,0 @@
-char action #0=setMode 1=runCar 2=runMotor 3=runSensor
-char data0
-char data1
-char data2
-char data3
----
-bool ret
-string msg

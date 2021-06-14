@@ -1,5 +1,0 @@
-bool action #true open and false close
-string name #sport name
----
-bool ret
-string msg
