@@ -269,13 +269,14 @@ public:
 
 		//3.WritePort
 		asio::io_context ioc;
-		asio::steady_timer timer(ioc, 20ms);//50HZ
+		asio::steady_timer timer(ioc, 1000ms);
 		std::function<void(error_code ec)> SendXQStatus;
 		SendXQStatus = [&](error_code ec)->void
 		{
 			//3.1 PrepareData
 			static int v = 0;
 			if (v > INT_MAX - 100) v = 0;
+			spdlog::info("{}: {}", v, tsms);
 			char data[frameSize] = { 0 };
 			data[0] = 0xcd; data[1] = 0xeb; data[2] = 0xd7;
 			int *status = (int*)(data + 4); *status = 1;
@@ -298,7 +299,6 @@ public:
 			asio::write(sport, asio::buffer(data, frameSize));
 			timer.expires_at(timer.expires_at() + 20ms);//50HZ
 			timer.async_wait(SendXQStatus);
-			spdlog::info("Timestamp: {}", tsms);
 		};
 		timer.async_wait(SendXQStatus);
 		ioc.run();
@@ -307,36 +307,17 @@ public:
 	static int TestAsioTimerAndFunctionAndLambda(int argc, char** argv)
 	{
 		asio::io_context ioc;
-		asio::steady_timer timer(ioc, 500ms);
+		asio::steady_timer timer(ioc, 5000ms);
 		std::function<void(error_code ec)> FuncCallback;
 		FuncCallback = [&](error_code ec)->void
 		{
-			if (1)
-			{
-				static int v = 0;
-				static int64 t0 = 0;
-				int64 t1 = tsms;
-				this_thread::sleep_for(std::chrono::milliseconds(rand() % 500));
-				timer.async_wait(FuncCallback);
-				int64 t2 = tsms;
-				this_thread::sleep_for(std::chrono::milliseconds(500 - (t2 - t1)));
-				spdlog::info("{}: {}\t{}\t{}\t{}", ++v, t1, t2, t2 - t1, t1 - t0);
-				t0 = t1;
-			}
-			else
-			{
-				static int v = 0;
-				static int64 t0 = 0;
-				int64 t1 = tsms;
-				this_thread::sleep_for(std::chrono::milliseconds(rand() % 500));
-				timer.async_wait(FuncCallback);
-				int64 t2 = tsms;
-				timer.expires_at(timer.expires_at() + 500ms);
-				spdlog::info("{}: {}\t{}\t{}\t{}", ++v, t1, t2, t2 - t1, t1 - t0);
-				t0 = t1;
-			}
+			static int num = 0;
+			spdlog::info("{}: {}", ++num, tsse);
+			//this_thread::sleep_for(3000ms);
+			timer.expires_at(timer.expires_at() + 2000ms);//回调函数执行多于2秒这里设置两秒就没意义(相当于没设置因为定时器已终止)
+			timer.async_wait(FuncCallback);//回调函数执行N秒, 定时器延长时间多于N秒才有意义, 否则等同于递归调用
 		};
-		timer.async_wait(FuncCallback);
+		timer.async_wait(FuncCallback);//run this callback after 5 seconds
 		ioc.run();
 		return 0;
 	}
