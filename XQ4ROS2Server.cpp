@@ -1,8 +1,6 @@
 ﻿#include <cscv/base/acxx.h>
-#include <ams_xq/msg/xq_frame.hpp>
-#include <ams_xq/srv/open_port.hpp>
-#include <ams_xq/srv/set_char.hpp>
-#include <ams_xq/srv/set_chars.hpp>
+#include <turtlesim/srv/Kill.hpp>
+#include <turtlesim/srv/Spawn.hpp>
 #include "XQ4IO.h"
 
 class XQ4ROS2Server
@@ -15,55 +13,52 @@ public://ManuPort
 	rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srvClosePort = nodXQ4Server->create_service<std_srvs::srv::Trigger>("ClosePort",
 		[this](const std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)->void
 		{
-			res->success = true;
 			res->message = "Close " + ioXQ.name() + " succeeded";
 			if (ioXQ.opened()) ioXQ.close();
 			else res->message = ioXQ.name() + " not opened";
 		});
 
-	rclcpp::Service<ams_xq::srv::OpenPort>::SharedPtr srvManuPort = nodXQ4Server->create_service<ams_xq::srv::OpenPort>("OpenPort",
-		[this](const ams_xq::srv::OpenPort::Request::SharedPtr req, ams_xq::srv::OpenPort::Response::SharedPtr res)->void
+	rclcpp::Service<turtlesim::srv::Spawn>::SharedPtr srvManuPort = nodXQ4Server->create_service<turtlesim::srv::Spawn>("OpenPort",
+		[this](const turtlesim::srv::Spawn::Request::SharedPtr req, turtlesim::srv::Spawn::Response::SharedPtr res)->void
 		{
-			res->success = true;
-			if (ioXQ.opened()) res->message = ioXQ.name() + " not closed";
+			if (ioXQ.opened()) res->name = ioXQ.name() + " not closed";
 			else 
 			{
-				res->success = ioXQ.open(req->name);
-				res->message = "Open " + ioXQ.name() + (res->success ? " succeeded" : " failed and check whether to set right port name");
+				bool sc = ioXQ.open(req->name);
+				res->name = "Open " + ioXQ.name() + (sc ? " succeeded" : " failed and check whether to set right port name");
 			}
 		});
 
 public://ManuCar
-	rclcpp::Service<ams_xq::srv::SetChar>::SharedPtr srvSetModeOrSensor = nodXQ4Server->create_service<ams_xq::srv::SetChar>("SetModeOrSensor",
-		[this](const ams_xq::srv::SetChar::Request::SharedPtr req, ams_xq::srv::SetChar::Response::SharedPtr res)->void
+	rclcpp::Service<turtlesim::srv::Spawn>::SharedPtr srvSetModeOrSensor = nodXQ4Server->create_service<turtlesim::srv::Spawn>("SetModeOrSensor",
+		[this](const turtlesim::srv::Spawn::Request::SharedPtr req, turtlesim::srv::Spawn::Response::SharedPtr res)->void
 		{
-			res->success = true;
-			res->message = "Done";
-			if (req->data == 0 || req->data == 1 || req->data == 2) ioXQ.setMode(req->data);
-			else ioXQ.runSensor(req->data);
+			res->name = "Done";
+			if (req->name[0] == 0 || req->name[0] == 1 || req->name[0] == 2) ioXQ.setMode(req->name[0]);
+			else ioXQ.runSensor(req->name[0]);
 		});
 
-	rclcpp::Service<ams_xq::srv::SetChars>::SharedPtr srvRunMotor = nodXQ4Server->create_service<ams_xq::srv::SetChars>("RunMotor",
-		[this](const ams_xq::srv::SetChars::Request::SharedPtr req, ams_xq::srv::SetChars::Response::SharedPtr res)->void
+	rclcpp::Service<turtlesim::srv::Spawn>::SharedPtr srvRunMotor = nodXQ4Server->create_service<turtlesim::srv::Spawn>("RunMotor",
+		[this](const turtlesim::srv::Spawn::Request::SharedPtr req, turtlesim::srv::Spawn::Response::SharedPtr res)->void
 		{
-			res->success = true;
-			res->message = "Done";
-			if (req->data.size() < 3) ioXQ.runMotor(req->data[0], req->data[1], req->data[2], req->data[3]);
-			else { res->success = false; res->message = "Failed (too few params)"; }
+			res->name = "Done";
+			if (req->name.size() < 3) ioXQ.runMotor(req->name[0], req->name[1], req->name[2], req->name[3]);
+			else res->name = "Failed (too few params)";
 		});
 
-	rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr subMotion = nodXQ4Server->create_subscription<std_msgs::msg::Int16>("RunCar", 2,
-		[&](const std_msgs::msg::Int16::SharedPtr val)->void { ioXQ.runCar(char(val && 0xFF00), char(val && 0xFF)); });
+	rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subMotion = nodXQ4Server->create_subscription<std_msgs::msg::String>("RunCar", 2,
+		[&](const std_msgs::msg::String::SharedPtr val)->void { ioXQ.runCar(val->data[0], val->data[1]); });
 
 public://Update
-	rclcpp::Publisher<ams_xq::msg::XQFrame>::SharedPtr pubXQFrame = nodXQ4Server->create_publisher<ams_xq::msg::XQFrame>("XQFrame", 2);
+	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubXQFrame = nodXQ4Server->create_publisher<std_msgs::msg::String>("XQFrame", 2);
     rclcpp::TimerBase::SharedPtr TimerXQFrame = nodXQ4Server->create_wall_timer(50ms, [&]()->void
         {
 			if(!ioXQ.opened()) { this_thread::sleep_for(2000ms); return; }
 			XQ4IO::XQFrame *frame = 0;
             ioXQ.getStatus(&frame);
-			ams_xq::msg::XQFrame rosFrame;
-			if(frame) memcpy(&rosFrame, frame, sizeof(rosFrame));
+			std_msgs::msg::String rosFrame; 
+			rosFrame.data.assign(sizeof(XQ4IO::XQFrame), 0);
+			if(frame) memcpy(rosFrame.data.data(), frame, sizeof(XQ4IO::XQFrame));
 			else spdlog::warn("Invalid frame and if this happens often:\n\t(1)not open car board\n\t(2)connect wrong port\n\t(3)");
             pubXQFrame->publish(rosFrame);
         });
@@ -87,4 +82,8 @@ public:
 	}
 };
 
-int main(int argc, char** argv) { XQ4ROS2Server::RunMe(argc, argv); return 0; }
+int main0(int argc, char** argv) { XQ4ROS2Server::RunMe(argc, argv); return 0; }
+
+int main1(int argc, char** argv) { XQ4IO::SimXQ4("COM1"); return 0; }
+
+int main(int argc, char** argv) { XQ4IO::TestAsioTimerAndFunctionAndLambda(argc, argv); return 0; }

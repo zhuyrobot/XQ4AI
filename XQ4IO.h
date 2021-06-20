@@ -85,8 +85,6 @@ public:
 class XQ4IO
 {
 public:
-
-public:
 	struct XQFrame
 	{
 		int status;//小车状态: 0未初始化, 1正常, -1表示异常
@@ -184,16 +182,16 @@ public://3.Write
 	inline bool getStatus(XQFrame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }
 
 private:
+	static const int headSize = 4;
+	static const int itemSize = sizeof(int);
+	static const int itemSizeEx = itemSize + 1;
+	static const int itemCount = sizeof(XQ4IO::XQFrame) / itemSize;
+	static const int dataSize = itemCount * itemSizeEx;
+	static const int frameSize = dataSize + headSize;
 	void read2decode()
 	{
 		vector<char> serArr;
 		int readPos = 0;
-		const int headSize = 4;
-		const int itemSize = sizeof(int);
-		const int itemSizeEx = itemSize + 1;
-		const int itemCount = sizeof(XQ4IO::XQFrame) / itemSize;
-		const int dataSize = itemCount * itemSizeEx;
-		const int frameSize = dataSize + headSize;
 		const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
 		const int maxBufSize = 2 * sizeof(XQFrame) + 8;
 		char bufReader[maxBufSize];
@@ -250,5 +248,96 @@ private:
 				readPos = 0; 
 			}
 		}
+	}
+
+public:
+	static void SimXQ4(string sportname)
+	{
+		//1.OpenPort
+		error_code ec;
+		asio::io_service io;
+		asio::serial_port sport = asio::serial_port(io);
+		sport.open(sportname, ec);
+		if (ec.value() != 0) {spdlog::error("Open sport {} failed: {}", sportname, ec.message()); return; }
+
+		//2.SetPort
+		sport.set_option(asio::serial_port::baud_rate(115200));
+		sport.set_option(asio::serial_port::character_size(8));
+		sport.set_option(asio::serial_port::stop_bits(asio::serial_port::stop_bits::one));
+		sport.set_option(asio::serial_port::parity(asio::serial_port::parity::none));
+		sport.set_option(asio::serial_port::flow_control(asio::serial_port::flow_control::none));
+
+		//3.WritePort
+		asio::io_context ioc;
+		asio::steady_timer timer(ioc, 20ms);//50HZ
+		std::function<void(error_code ec)> SendXQStatus;
+		SendXQStatus = [&](error_code ec)->void
+		{
+			//3.1 PrepareData
+			static int v = 0;
+			if (v > INT_MAX - 100) v = 0;
+			char data[frameSize] = { 0 };
+			data[0] = 0xcd; data[1] = 0xeb; data[2] = 0xd7;
+			int *status = (int*)(data + 4); *status = 1;
+			float* power = (float*)(data + 4 + 5 * 1); *power = 11;
+			float* theta = (float*)(data + 4 + 5 * 2); *theta = ++v;
+			int* encoder_ppr = (int*)(data + 4 + 5 * 3); *encoder_ppr = ++v;
+			int* encoder_delta_r = (int*)(data + 4 + 5 * 4); *encoder_delta_r = ++v;
+			int* encoder_delta_l = (int*)(data + 4 + 5 * 5); *encoder_delta_l = ++v;
+			int* encoder_delta_car = (int*)(data + 4 + 5 * 6); *encoder_delta_car = ++v;
+			int* omga_r = (int*)(data + 4 + 5 * 7); *omga_r = ++v;
+			int* omga_l = (int*)(data + 4 + 5 * 8); *omga_l = ++v;
+			float* distance1 = (float*)(data + 4 + 5 * 9); *distance1 = ++v;
+			float* distance2 = (float*)(data + 4 + 5 * 10); *distance2 = ++v;
+			float* distance3 = (float*)(data + 4 + 5 * 11); *distance3 = ++v;
+			float* distance4 = (float*)(data + 4 + 5 * 12); *distance4 = ++v;
+			for(int k = 13; k < 13 + 9; ++k) { float* imu = (float*)(data + 4 + 5 * k); *imu = ++v; }
+			uint *timestamp = (uint*)(data + 4 + 5 * 22); *timestamp = tsms;
+
+			//3.2 SendData
+			asio::write(sport, asio::buffer(data, frameSize));
+			timer.expires_at(timer.expires_at() + 20ms);//50HZ
+			timer.async_wait(SendXQStatus);
+			spdlog::info("Timestamp: {}", tsms);
+		};
+		timer.async_wait(SendXQStatus);
+		ioc.run();
+	}
+
+	static int TestAsioTimerAndFunctionAndLambda(int argc, char** argv)
+	{
+		asio::io_context ioc;
+		asio::steady_timer timer(ioc, 500ms);
+		std::function<void(error_code ec)> FuncCallback;
+		FuncCallback = [&](error_code ec)->void
+		{
+			if (1)
+			{
+				static int v = 0;
+				static int64 t0 = 0;
+				int64 t1 = tsms;
+				this_thread::sleep_for(std::chrono::milliseconds(rand() % 500));
+				timer.async_wait(FuncCallback);
+				int64 t2 = tsms;
+				this_thread::sleep_for(std::chrono::milliseconds(500 - (t2 - t1)));
+				spdlog::info("{}: {}\t{}\t{}\t{}", ++v, t1, t2, t2 - t1, t1 - t0);
+				t0 = t1;
+			}
+			else
+			{
+				static int v = 0;
+				static int64 t0 = 0;
+				int64 t1 = tsms;
+				this_thread::sleep_for(std::chrono::milliseconds(rand() % 500));
+				timer.async_wait(FuncCallback);
+				int64 t2 = tsms;
+				timer.expires_at(timer.expires_at() + 500ms);
+				spdlog::info("{}: {}\t{}\t{}\t{}", ++v, t1, t2, t2 - t1, t1 - t0);
+				t0 = t1;
+			}
+		};
+		timer.async_wait(FuncCallback);
+		ioc.run();
+		return 0;
 	}
 };
