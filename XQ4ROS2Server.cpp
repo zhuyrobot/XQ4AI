@@ -1,4 +1,5 @@
 ﻿#include <cscv/base/acxx.h>
+#include <ams_xq/msg/xq_frame.hpp>
 #include <turtlesim/srv/Kill.hpp>
 #include <turtlesim/srv/Spawn.hpp>
 #include "XQ4IO.h"
@@ -50,15 +51,14 @@ public://ManuCar
 		[&](const std_msgs::msg::String::SharedPtr val)->void { ioXQ.runCar(val->data[0], val->data[1]); });
 
 public://Update
-	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubXQFrame = nodXQ4Server->create_publisher<std_msgs::msg::String>("XQFrame", 2);
+	rclcpp::Publisher<ams_xq::msg::XQFrame>::SharedPtr pubXQFrame = nodXQ4Server->create_publisher<ams_xq::msg::XQFrame>("XQFrame", 2);
     rclcpp::TimerBase::SharedPtr TimerXQFrame = nodXQ4Server->create_wall_timer(50ms, [&]()->void
         {
 			if(!ioXQ.opened()) { this_thread::sleep_for(2000ms); return; }
 			XQ4IO::XQFrame *frame = 0;
             ioXQ.getStatus(&frame);
-			std_msgs::msg::String rosFrame; 
-			rosFrame.data.assign(sizeof(XQ4IO::XQFrame), 0);
-			if(frame) memcpy(rosFrame.data.data(), frame, sizeof(XQ4IO::XQFrame));
+			ams_xq::msg::XQFrame rosFrame;
+			if(frame) memcpy(&rosFrame, frame, sizeof(rosFrame));
 			else spdlog::warn("Invalid frame and if this happens often:\n\t(1)not open car board\n\t(2)connect wrong port\n\t(3)");
             pubXQFrame->publish(rosFrame);
         });
