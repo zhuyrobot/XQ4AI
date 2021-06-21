@@ -152,7 +152,7 @@ public://2.Config
 	inline void close() { keeping = false; this_thread::sleep_for(1000ms); cirFrames.deinit(); sport.close(); }
 	inline string name() { return sname; }
 
-public://3.Write
+public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 	const char heads[3] = { char(0xcd), char(0xeb), char(0xd7) };
 	inline void setMode(char mode/*T/R/I*/)//T=debug   R=work   I=reset
 	{
