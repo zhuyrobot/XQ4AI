@@ -14,7 +14,7 @@ endif(WIN32)
 link_libraries(${ROS2_LIBS})
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME} 
-"XQFrame.msg"
+"XQ4Frame.msg"
 "SetString.srv"
 )
 

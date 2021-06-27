@@ -1,5 +1,5 @@
 ﻿#include <cscv/base/acxx.h>
-#include <ams_xq/msg/xq_frame.hpp>
+#include <ams_xq/msg/xq4_frame.hpp>
 #include <ams_xq/srv/set_string.hpp>
 #include "XQ4IO.h"
 

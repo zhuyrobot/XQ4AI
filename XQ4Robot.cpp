@@ -1,5 +1,5 @@
 ﻿#include <cscv/base/acxx.h>
-#include <ams_xq/msg/xq_frame.hpp>
+#include <ams_xq/msg/xq4_frame.hpp>
 #include <ams_xq/srv/set_string.hpp>
 #include "XQ4IO.h"
 
@@ -64,13 +64,13 @@ public://ManuCar
 		});
 
 public://Update
-	rclcpp::Publisher<ams_xq::msg::XQFrame>::SharedPtr pubXQFrame = create_publisher<ams_xq::msg::XQFrame>("XQFrame", 10);
+	rclcpp::Publisher<ams_xq::msg::XQ4Frame>::SharedPtr pubXQFrame = create_publisher<ams_xq::msg::XQ4Frame>("XQ4Frame", 10);
     rclcpp::TimerBase::SharedPtr TimerXQFrame = create_wall_timer(50ms, [&]()->void
         {
 			if(!xq4io.opened()) { this_thread::sleep_for(2000ms); spdlog::error("No port opened"); return; }
-			XQ4IO::XQFrame *frame = 0;
+			XQ4IO::XQ4Frame *frame = 0;
             xq4io.getStatus(&frame);
-			ams_xq::msg::XQFrame rosFrame;
+			ams_xq::msg::XQ4Frame rosFrame;
 			if(frame) memcpy(&rosFrame, frame, sizeof(rosFrame));
 			else spdlog::warn("Invalid frame and it is possible to connect one wrong port if this happens continuously");
             pubXQFrame->publish(rosFrame);

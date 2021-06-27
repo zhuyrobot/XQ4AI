@@ -9,7 +9,7 @@ using namespace std;
 class XQ4RC : public QWidget
 {
 public:
-	struct XQFrame
+	struct XQ4Frame
 	{
 		int status;//小车状态: 0未初始化, 1正常, -1表示异常
 		float power;//电源电压: 9~13V
@@ -82,7 +82,7 @@ private:
 	const int headSize = 4;
 	const int itemSize = sizeof(int);
 	const int itemSizeEx = itemSize + 1;
-	const int itemCount = sizeof(XQFrame) / itemSize;
+	const int itemCount = sizeof(XQ4Frame) / itemSize;
 	const int dataSize = itemCount * itemSizeEx;
 	const int frameSize = dataSize + headSize;
 	const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
@@ -119,7 +119,7 @@ private:
 		if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); return; }
 
 		//6.Read data
-		XQFrame frame;
+		XQ4Frame frame;
 		for (int k = 0; k < itemCount; ++k) memcpy((int*)&frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
 		readPos = curPos + dataSize; //cout << endl << frame.print() << endl << endl;
 		plainTextEditCarStatus->setPlainText(frame.print().c_str());

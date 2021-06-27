@@ -86,7 +86,7 @@ public:
 class XQ4IO
 {
 public:
-	struct XQFrame
+	struct XQ4Frame
 	{
 		int status;//小车状态: 0未初始化, 1正常, -1表示异常
 		float power;//电源电压: 9~13V
@@ -131,7 +131,7 @@ private://1.Device
 	asio::serial_port sport = asio::serial_port(io);
 	bool keeping = false;
 	int64 msTimeout = 10;
-	CirArr<XQFrame> cirFrames;
+	CirArr<XQ4Frame> cirFrames;
 
 public://2.Config
 	inline bool open(string spname)
@@ -180,13 +180,13 @@ public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 		asio::write(sport, asio::buffer(data, action == 0 ? 5 : 6));
 	}
 
-	inline bool getStatus(XQFrame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }
+	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }
 
 private:
 	static const int headSize = 4;
 	static const int itemSize = sizeof(int);
 	static const int itemSizeEx = itemSize + 1;
-	static const int itemCount = sizeof(XQ4IO::XQFrame) / itemSize;
+	static const int itemCount = sizeof(XQ4IO::XQ4Frame) / itemSize;
 	static const int dataSize = itemCount * itemSizeEx;
 	static const int frameSize = dataSize + headSize;
 	void read2decode()
@@ -194,7 +194,7 @@ private:
 		vector<char> serArr;
 		int readPos = 0;
 		const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
-		const int maxBufSize = 2 * sizeof(XQFrame) + 8;
+		const int maxBufSize = 2 * sizeof(XQ4Frame) + 8;
 		char bufReader[maxBufSize];
 		while (keeping)
 		{
@@ -230,7 +230,7 @@ private:
 			if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); continue; }
 
 			//5.Read data
-			XQ4IO::XQFrame* frame;
+			XQ4IO::XQ4Frame* frame;
 			int64 tsPos = cirFrames.lockWritten(&frame);
 			if (tsPos != -1)
 			{

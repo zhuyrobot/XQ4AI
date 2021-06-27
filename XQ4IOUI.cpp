@@ -106,7 +106,7 @@ public:
 				});
 			connect(timerCarStatus, &QTimer::timeout, [this]()->void 
 				{
-					XQ4IO::XQFrame* msg = 0;
+					XQ4IO::XQ4Frame* msg = 0;
 					xq4io.getStatus(&msg);
 					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(XQ4Server)
+project(XQ4AI)
 
 #1.Cfg
 set(COMMON_CMAKE ${CMAKE_SOURCE_DIR}/common.cmake CACHE STRING "Common cmake file")
