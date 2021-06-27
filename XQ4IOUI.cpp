@@ -4,17 +4,17 @@
 #include <QtWidgets/QtWidgets>
 #include <QtSerialPort/QtSerialPort>
 
-class XQ4RC : public QWidget
+class XQ4IOUI : public QWidget
 {
 public:
 	XQ4IO xq4io;
 
 public:
-	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4RC me; me.show(); app.exec(); }
-	XQ4RC(QWidget* parent = 0) : QWidget(parent)
+	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4IOUI me; me.show(); app.exec(); }
+	XQ4IOUI(QWidget* parent = 0) : QWidget(parent)
 	{
 		//0.Basic settting
-		this->setWindowTitle("Super Cube");
+		this->setWindowTitle(__FUNCTION__);
 		this->setMinimumSize(QSize(1280, 720));
 		this->setFont(QFont("", 15, QFont::Thin));
 
@@ -140,4 +140,4 @@ public:
 	QTimer* timerCarStatus = new QTimer(this);
 };
 
-int main(int argc, char** argv) { XQ4RC::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv) { XQ4IOUI::RunMe(argc, argv); return 0; }

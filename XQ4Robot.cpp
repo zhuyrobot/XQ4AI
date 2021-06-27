@@ -1,13 +1,13 @@
 ﻿#include <cscv/base/acxx.h>
 #include <ams_xq/msg/xq4_frame.hpp>
-#include <ams_xq/srv/set_string.hpp>
+#include <ams_xq/srv/xq4_serve.hpp>
 #include "XQ4IO.h"
 
-class XQ4ROS2Server : public rclcpp::Node
+class XQ4Robot : public rclcpp::Node
 {
 public://XQ4Node
 	XQ4IO xq4io;
-	XQ4ROS2Server(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
+	XQ4Robot(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
 	{ 
 		if (port.empty()) return;
 		if (xq4io.open(port)) spdlog::info("Open {} failed", port);
@@ -22,36 +22,36 @@ public://ManuPort
 			else res->message = xq4io.name() + " not opened";
 		});
 
-	//ros2 service call /XQ/OpenPort ams_xq/srv/SetString "{str: 'COM2'}"
-	rclcpp::Service<ams_xq::srv::SetString>::SharedPtr srvManuPort = create_service<ams_xq::srv::SetString>("OpenPort",
-		[this](const ams_xq::srv::SetString::Request::SharedPtr req, ams_xq::srv::SetString::Response::SharedPtr res)->void
+	//ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: 'COM2'}"
+	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvManuPort = create_service<ams_xq::srv::XQ4Serve>("OpenPort",
+		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
 			if (xq4io.opened()) res->msg = xq4io.name() + " not closed";
-			else res->msg = "Open " + xq4io.name() + (xq4io.open(req->str) ? " succeeded" : " failed and check whether to set right port name");
+			else res->msg = "Open " + xq4io.name() + (xq4io.open(req->cmd) ? " succeeded" : " failed and check whether to set right port name");
 		});
 
 public://ManuCar
-	rclcpp::Service<ams_xq::srv::SetString>::SharedPtr srvSetMode = create_service<ams_xq::srv::SetString>("SetMode",
-		[this](const ams_xq::srv::SetString::Request::SharedPtr req, ams_xq::srv::SetString::Response::SharedPtr res)->void
+	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvSetMode = create_service<ams_xq::srv::XQ4Serve>("SetMode",
+		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
 			res->msg = "Done";
-			xq4io.setMode(req->str[0]);
+			xq4io.setMode(req->cmd[0]);
 		});
 
-	//ros2 service call /XQ/OpenPort ams_xq/srv/SetString "{str: '1'}" //0/1/2
-	rclcpp::Service<ams_xq::srv::SetString>::SharedPtr srvRunSensor = create_service<ams_xq::srv::SetString>("RunSensor",
-		[this](const ams_xq::srv::SetString::Request::SharedPtr req, ams_xq::srv::SetString::Response::SharedPtr res)->void
+	//ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: '1'}" //0/1/2
+	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvRunSensor = create_service<ams_xq::srv::XQ4Serve>("RunSensor",
+		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
 			res->msg = "Done";
-			xq4io.runSensor(int(req->str[0]) - 48);
+			xq4io.runSensor(int(req->cmd[0]) - 48);
 		});
 
-	//ros2 service call -r 1 /XQ/RunMotor ams_xq/srv/SetString "{str: 'FF22'}" //forward50 //SS22 for brake50
-	rclcpp::Service<ams_xq::srv::SetString>::SharedPtr srvRunMotor = create_service<ams_xq::srv::SetString>("RunMotor",
-		[this](const ams_xq::srv::SetString::Request::SharedPtr req, ams_xq::srv::SetString::Response::SharedPtr res)->void
+	//ros2 service call -r 1 /XQ/RunMotor ams_xq/srv/XQ4Serve "{str: 'FF22'}" //forward50 //SS22 for brake50
+	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvRunMotor = create_service<ams_xq::srv::XQ4Serve>("RunMotor",
+		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
 			res->msg = "Done";
-			if (req->str.size() > 3) xq4io.runMotor(req->str[0], req->str[1], req->str[2], req->str[3]);
+			if (req->cmd.size() > 3) xq4io.runMotor(req->cmd[0], req->cmd[1], req->cmd[2], req->cmd[3]);
 			else res->msg = "Failed (too few params)";
 		});
 
@@ -81,7 +81,7 @@ public:
 	{ 
 		rclcpp::init(argc, argv);
 
-		auto server = std::make_shared<XQ4ROS2Server>();
+		auto server = std::make_shared<XQ4Robot>();
 		vector<string> portnames;
 		for (int k = 0; k < 100; ++k) portnames.push_back("/dev/ttyUSB" + std::to_string(k));
 		for (int k = 0; k < 100; ++k) portnames.push_back("COM" + std::to_string(k));
@@ -95,4 +95,4 @@ public:
 	}
 };
 
-int main(int argc, char** argv) { XQ4ROS2Server::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv) { XQ4Robot::RunMe(argc, argv); return 0; }

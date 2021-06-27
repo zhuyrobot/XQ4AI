@@ -6,7 +6,7 @@
 #include <spdlog/spdlog.h>
 using namespace std;
 
-class XQ4RC : public QWidget
+class XQ4QTRC : public QWidget
 {
 public:
 	struct XQ4Frame
@@ -126,14 +126,14 @@ private:
 	}
 
 public:
-	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4RC me; me.show(); app.exec(); }
-	XQ4RC(QWidget* parent = 0) : QWidget(parent)
+	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4QTRC me; me.show(); app.exec(); }
+	XQ4QTRC(QWidget* parent = 0) : QWidget(parent)
 	{
 		//0.Basic settting
 		this->setWindowTitle("Super Cube");
 		this->setMinimumSize(QSize(1280, 720));
 		this->setFont(QFont("", 15, QFont::Thin));
-		connect(&sport, &QSerialPort::readyRead, this, &XQ4RC::sport_readyRead);
+		connect(&sport, &QSerialPort::readyRead, this, &XQ4QTRC::sport_readyRead);
 
 		//1.Group1 setting
 		gridLayoutMain->addWidget(comboBoxPorts, 0, 0, 1, 2);
@@ -252,4 +252,4 @@ public:
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
 };
 
-int main(int argc, char** argv) { XQ4RC::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv) { XQ4QTRC::RunMe(argc, argv); return 0; }

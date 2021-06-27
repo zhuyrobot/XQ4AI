@@ -15,7 +15,7 @@ link_libraries(${ROS2_LIBS})
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME} 
 "XQ4Frame.msg"
-"SetString.srv"
+"XQ4Serve.srv"
 )
 
   
