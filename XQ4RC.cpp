@@ -7,7 +7,7 @@
 class XQ4RC : public QWidget
 {
 public:
-	XQ4IO ioXQ;
+	XQ4IO xq4io;
 
 public:
 	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4RC me; me.show(); app.exec(); }
@@ -56,58 +56,58 @@ public:
 			for (int k = 0; k < children.size(); ++k) children[k]->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred));
 			for (int k = 2; k < 5; ++k) gridLayoutMain->setRowStretch(k, 1);
 			gridLayoutMain->setColumnStretch(3, 1);
-			connect(pushButtonMoveHead, &QPushButton::pressed, [this]()->void { ioXQ.runCar('f', char(spinBoxLinearSpeed->value())); });
-			connect(pushButtonMoveBack, &QPushButton::pressed, [this]()->void { ioXQ.runCar('b', char(spinBoxLinearSpeed->value())); });
-			connect(pushButtonTurnLeft, &QPushButton::pressed, [this]()->void { ioXQ.runCar('c', char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonTurnRight, &QPushButton::pressed, [this]()->void { ioXQ.runCar('d', char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonMoveHead, &QPushButton::released, [this]()->void { ioXQ.runCar('s', char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonMoveBack, &QPushButton::released, [this]()->void { ioXQ.runCar('s', char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonTurnLeft, &QPushButton::released, [this]()->void { ioXQ.runCar('s', char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonTurnRight, &QPushButton::released, [this]()->void { ioXQ.runCar('s', char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonCalibIMU, &QPushButton::pressed, [this]()->void { ioXQ.runSensor(0); });
-			connect(pushButtonEnableIR, &QPushButton::pressed, [this]()->void { ioXQ.runSensor(1); });
-			connect(pushButtonDisableIR, &QPushButton::pressed, [this]()->void { ioXQ.runSensor(2); });
-			connect(pushButtonPlusMotor1, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('F', 'S', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonMinusMotor1, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('B', 'S', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonPlusMotor2, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('S', 'F', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonMinusMotor2, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('S', 'B', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonPlusMotors, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('F', 'F', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonMinusMotors, &QPushButton::pressed, [this]()->void { ioXQ.runMotor('B', 'B', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
-			connect(pushButtonPlusMotor1, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonMinusMotor1, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonPlusMotor2, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonMinusMotor2, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonPlusMotors, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(pushButtonMinusMotors, &QPushButton::released, [this]()->void { ioXQ.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
-			connect(comboBoxWorkMode, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index)->void { char modes[3] = { 'T', 'R', 'I' }; ioXQ.setMode(modes[index]); });
+			connect(pushButtonMoveHead, &QPushButton::pressed, [this]()->void { xq4io.runCar('f', char(spinBoxLinearSpeed->value())); });
+			connect(pushButtonMoveBack, &QPushButton::pressed, [this]()->void { xq4io.runCar('b', char(spinBoxLinearSpeed->value())); });
+			connect(pushButtonTurnLeft, &QPushButton::pressed, [this]()->void { xq4io.runCar('c', char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonTurnRight, &QPushButton::pressed, [this]()->void { xq4io.runCar('d', char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonMoveHead, &QPushButton::released, [this]()->void { xq4io.runCar('s', char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonMoveBack, &QPushButton::released, [this]()->void { xq4io.runCar('s', char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonTurnLeft, &QPushButton::released, [this]()->void { xq4io.runCar('s', char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonTurnRight, &QPushButton::released, [this]()->void { xq4io.runCar('s', char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonCalibIMU, &QPushButton::pressed, [this]()->void { xq4io.runSensor(0); });
+			connect(pushButtonEnableIR, &QPushButton::pressed, [this]()->void { xq4io.runSensor(1); });
+			connect(pushButtonDisableIR, &QPushButton::pressed, [this]()->void { xq4io.runSensor(2); });
+			connect(pushButtonPlusMotor1, &QPushButton::pressed, [this]()->void { xq4io.runMotor('F', 'S', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonMinusMotor1, &QPushButton::pressed, [this]()->void { xq4io.runMotor('B', 'S', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonPlusMotor2, &QPushButton::pressed, [this]()->void { xq4io.runMotor('S', 'F', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonMinusMotor2, &QPushButton::pressed, [this]()->void { xq4io.runMotor('S', 'B', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonPlusMotors, &QPushButton::pressed, [this]()->void { xq4io.runMotor('F', 'F', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonMinusMotors, &QPushButton::pressed, [this]()->void { xq4io.runMotor('B', 'B', char(spinBoxLinearSpeed->value()), char(spinBoxAngularSpeed->value())); });
+			connect(pushButtonPlusMotor1, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonMinusMotor1, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonPlusMotor2, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonMinusMotor2, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonPlusMotors, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(pushButtonMinusMotors, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
+			connect(comboBoxWorkMode, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index)->void { char modes[3] = { 'T', 'R', 'I' }; xq4io.setMode(modes[index]); });
 			connect(pushButtonOpen, &QPushButton::clicked, [this]()->void
 				{
-					if (ioXQ.opened())
+					if (xq4io.opened())
 					{
 						timerCarStatus->stop();
-						ioXQ.close();
+						xq4io.close();
 						pushButtonOpen->setText("Open");
-						spdlog::info("{} closed with success", ioXQ.name());
+						spdlog::info("{} closed with success", xq4io.name());
 					}
 					else
 					{
-						if (ioXQ.open(comboBoxPorts->currentText().toStdString()))
+						if (xq4io.open(comboBoxPorts->currentText().toStdString()))
 						{
 							pushButtonOpen->setText("Close");
-							spdlog::info("{} openned with success", ioXQ.name());
+							spdlog::info("{} openned with success", xq4io.name());
 							timerCarStatus->start(200);
 						}
 						else
 						{
-							spdlog::error("{} openned with failure", ioXQ.name());
-							QMessageBox::information(this, "", ioXQ.name().c_str() + QString(" openned with failure"));
+							spdlog::error("{} openned with failure", xq4io.name());
+							QMessageBox::information(this, "", xq4io.name().c_str() + QString(" openned with failure"));
 						}
 					}
 				});
 			connect(timerCarStatus, &QTimer::timeout, [this]()->void 
 				{
 					XQ4IO::XQFrame* msg = 0;
-					ioXQ.getStatus(&msg);
+					xq4io.getStatus(&msg);
 					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
 				});

@@ -1,5 +1,6 @@
-﻿#include <cscv/base/atool.h>
+﻿#include <cscv/base/acxx.h>
 #include <ams_xq/msg/xq_frame.hpp>
+#include <ams_xq/srv/set_string.hpp>
 #include "XQ4IO.h"
 
 class XQ4ROS2Client
@@ -11,4 +12,4 @@ public:
 
 };
 
-int main(int argc, char** argv) { XQ4ROS::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv) { XQ4ROS2Client::RunMe(argc, argv); return 0; }

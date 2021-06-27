@@ -252,7 +252,7 @@ private:
 	}
 
 public:
-	static void SimXQ4(string sportname)
+	static void XQ4Sim(string sportname)
 	{
 		//1.OpenPort
 		error_code ec;

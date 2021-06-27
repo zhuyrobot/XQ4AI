@@ -2,8 +2,8 @@
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 #include <QtSerialPort/QtSerialPort>
-#include<opencv2/opencv.hpp>
-#include<spdlog/spdlog.h>
+#include <opencv2/opencv.hpp>
+#include <spdlog/spdlog.h>
 using namespace std;
 //using namespace cv;
 
