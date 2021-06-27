@@ -5,7 +5,6 @@
 #include <opencv2/opencv.hpp>
 #include <spdlog/spdlog.h>
 using namespace std;
-//using namespace cv;
 
 class XQ4RC : public QWidget
 {

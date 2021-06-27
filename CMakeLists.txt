@@ -9,7 +9,8 @@ endif()
 include(${COMMON_CMAKE})
 
 #2.Pro
-add_executable(XQ4RC CMakeLists.txt XQ4IO.h XQ4RC.cpp)
-add_executable(XQ4ROS2Server XQ4IO.h XQ4ROS2Server.cpp)
-add_executable(XQ4ROS2Client XQ4IO.h XQ4ROS2Client.cpp)
-add_executable(XQ4SPQT XQ4SPQT.cpp)
+add_executable(SimXQ4 CMakeLists.txt XQ4IO.h SimXQ4.cpp)
+add_executable(XQ4IOUI XQ4IOUI.cpp)
+add_executable(XQ4Robot XQ4Robot.cpp)
+add_executable(XQ4RobotRC XQ4RobotRC.cpp)
+add_executable(XQ4ZDeprecatedQTPort XQ4ZDeprecatedQTPort.cpp)

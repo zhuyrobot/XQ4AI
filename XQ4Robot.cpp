@@ -96,7 +96,3 @@ public:
 };
 
 int main(int argc, char** argv) { XQ4ROS2Server::RunMe(argc, argv); return 0; }
-
-int main1(int argc, char** argv) { XQ4IO::XQ4Sim("COM1"); return 0; }
-
-int main2(int argc, char** argv) { XQ4IO::TestAsioTimerAndFunctionAndLambda(argc, argv); return 0; }
