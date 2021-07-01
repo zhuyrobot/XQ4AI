@@ -6,13 +6,16 @@
   <description>ams for action + msg + srv</description>
   <license>BSD</license>
   <url type="website">https://index.ros.org/doc/ros2</url>
-  <author>DZY</author>
-  <maintainer email="DZY@DZY.COM">DZY</maintainer>
+  <author>user</author>
+  <maintainer email="user@user.COM">user</maintainer>
   
+  <!--buildtool_depend-->
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <depend>ament_index_cpp</depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
-  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <!--exec_depend-->
+
+  <!--export-->
   <member_of_group>rosidl_interface_packages</member_of_group>
   <export><build_type>ament_cmake</build_type></export>
   
