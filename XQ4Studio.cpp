@@ -4,14 +4,14 @@
 #include <QtWidgets/QtWidgets>
 #include <QtSerialPort/QtSerialPort>
 
-class XQ4IOUI : public QWidget
+class XQ4Studio : public QWidget
 {
 public:
 	XQ4IO xq4io;
 
 public:
-	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4IOUI me; me.show(); app.exec(); }
-	XQ4IOUI(QWidget* parent = 0) : QWidget(parent)
+	static void RunMe(int argc = 0, char** argv = 0) { QApplication app(argc, argv); XQ4Studio me; me.show(); app.exec(); }
+	XQ4Studio(QWidget* parent = 0) : QWidget(parent)
 	{
 		//0.Basic settting
 		this->setWindowTitle(__FUNCTION__);
@@ -38,8 +38,9 @@ public:
 		gridLayoutMain->addWidget(pushButtonMinusMotor2, 7, 2);
 		gridLayoutMain->addWidget(pushButtonPlusMotors, 8, 0);
 		gridLayoutMain->addWidget(pushButtonMinusMotors, 8, 2);
-		gridLayoutMain->addWidget(pushButtonEnableROS2, 9, 0, 1, 3);
-		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 10, 1);
+		gridLayoutMain->addWidget(pushButtonStartXQ4ROS, 9, 0, 1, 3);
+		gridLayoutMain->addWidget(pushButtonStartXQ4Sim, 10, 0, 1, 3);
+		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 11, 1);
 		{
 			//1.GetAllSerPorts
 			QList<QSerialPortInfo> listSerialPortInfo = QSerialPortInfo::availablePorts();
@@ -111,6 +112,14 @@ public:
 					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
 				});
+			connect(pushButtonStartXQ4ROS, &QPushButton::pressed, [this]()->void { });
+			connect(pushButtonStartXQ4Sim, &QPushButton::pressed, [this]()->void 
+				{ 	
+					QList<QSerialPortInfo> listSerialPortInfo = QSerialPortInfo::availablePorts();
+					QStringList items; for (int k = 0; k < listSerialPortInfo.size(); ++k)items.push_back(listSerialPortInfo[k].portName());
+					QString sport = QInputDialog::getItem(this, "", "Choose or input serial port", items);
+					std::thread(&XQ4IO::XQ4Sim, sport.toStdString()).detach();
+				});
 		}
 	}
 
@@ -135,9 +144,32 @@ public:
 	QPushButton* pushButtonMinusMotor2 = new QPushButton("Minus motorL", this);
 	QPushButton* pushButtonPlusMotors = new QPushButton("Plus motors", this);
 	QPushButton* pushButtonMinusMotors = new QPushButton("Minus motors", this);
-	QPushButton* pushButtonEnableROS2 = new QPushButton("Start ROS2", this);
+	QPushButton* pushButtonStartXQ4ROS = new QPushButton("Start XQ4ROS", this);
+	QPushButton* pushButtonStartXQ4Sim = new QPushButton("Start XQ4Simulator", this);
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
 	QTimer* timerCarStatus = new QTimer(this);
 };
 
-int main(int argc, char** argv) { XQ4IOUI::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv)
+{
+	std::map<string, function<void(int, char**)>> funcs;
+	funcs["XQ4Studio"] = XQ4Studio::RunMe;
+	funcs["XQ4Simulator"] = [](int argc, char** argv)->void
+	{
+		if (argc < 2) spdlog::error("format: appname sport_name");
+		else XQ4IO::XQ4Sim(argv[1]);
+	};
+	if (argc < 2)
+	{
+		string str = fmt::format("Format: appname cmdname params\n\nSupport: {}  {}\n\nPress any key to run: {}", funcs.begin()->first, (++funcs.begin())->first, (++funcs.begin())->first);
+		cout << str; getchar();
+		XQ4Studio::RunMe(argc, argv);
+	}
+	else
+	{
+		int argn = argc - 1;
+		vector<char*> argp; for (int k = 1; k < argc; ++k) argp.push_back(argv[k]);
+		funcs[argv[1]](argn, argp.data());
+	}
+	return 0;
+}

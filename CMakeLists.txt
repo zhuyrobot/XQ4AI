@@ -9,7 +9,6 @@ endif()
 include(${COMMON_CMAKE})
 
 #2.Pro
-add_executable(SimXQ4 CMakeLists.txt XQ4IO.h SimXQ4.cpp)
-add_executable(XQ4ROS XQ4ROS.cpp)
-add_executable(XQ4Studio XQ4Studio.cpp)
+add_executable(XQ4ROS CMakeLists.txt XQ4IO.h XQ4ROS.cpp)
+add_executable(XQ4Studio CMakeLists.txt XQ4IO.h XQ4Studio.cpp)
 add_executable(XQ4ZDeprecatedQTRC XQ4ZDeprecatedQTRC.cpp)

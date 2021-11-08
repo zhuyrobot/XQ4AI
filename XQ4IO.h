@@ -252,7 +252,7 @@ private:
 	}
 
 public:
-	static void SimXQ4(string sportname)
+	static void XQ4Sim(string sportname)
 	{
 		//1.OpenPort
 		error_code ec;
@@ -274,52 +274,37 @@ public:
 		std::function<void(error_code ec)> SendXQStatus;
 		SendXQStatus = [&](error_code ec)->void
 		{
-			//3.1 PrepareData
-			static int v = 0;
-			if (v > INT_MAX - 100) v = 0;
-			spdlog::info("{}: {}", v, tsms);
+			//3.1 RunTask
+			static int virvalue = -1; virvalue = virvalue + 100 > INT_MAX ? -1 : virvalue;
 			char data[frameSize] = { 0 };
 			data[0] = 0xcd; data[1] = 0xeb; data[2] = 0xd7;
 			int *status = (int*)(data + 4); *status = 1;
 			float* power = (float*)(data + 4 + 5 * 1); *power = 11;
-			float* theta = (float*)(data + 4 + 5 * 2); *theta = ++v;
-			int* encoder_ppr = (int*)(data + 4 + 5 * 3); *encoder_ppr = ++v;
-			int* encoder_delta_r = (int*)(data + 4 + 5 * 4); *encoder_delta_r = ++v;
-			int* encoder_delta_l = (int*)(data + 4 + 5 * 5); *encoder_delta_l = ++v;
-			int* encoder_delta_car = (int*)(data + 4 + 5 * 6); *encoder_delta_car = ++v;
-			int* omga_r = (int*)(data + 4 + 5 * 7); *omga_r = ++v;
-			int* omga_l = (int*)(data + 4 + 5 * 8); *omga_l = ++v;
-			float* distance1 = (float*)(data + 4 + 5 * 9); *distance1 = ++v;
-			float* distance2 = (float*)(data + 4 + 5 * 10); *distance2 = ++v;
-			float* distance3 = (float*)(data + 4 + 5 * 11); *distance3 = ++v;
-			float* distance4 = (float*)(data + 4 + 5 * 12); *distance4 = ++v;
-			for(int k = 13; k < 13 + 9; ++k) { float* imu = (float*)(data + 4 + 5 * k); *imu = ++v; }
-			uint *timestamp = (uint*)(data + 4 + 5 * 22); *timestamp = tsms;
-
-			//3.2 SendData
+			float* theta = (float*)(data + 4 + 5 * 2); *theta = ++virvalue;
+			int* encoder_ppr = (int*)(data + 4 + 5 * 3); *encoder_ppr = ++virvalue;
+			int* encoder_delta_r = (int*)(data + 4 + 5 * 4); *encoder_delta_r = ++virvalue;
+			int* encoder_delta_l = (int*)(data + 4 + 5 * 5); *encoder_delta_l = ++virvalue;
+			int* encoder_delta_car = (int*)(data + 4 + 5 * 6); *encoder_delta_car = ++virvalue;
+			int* omga_r = (int*)(data + 4 + 5 * 7); *omga_r = ++virvalue;
+			int* omga_l = (int*)(data + 4 + 5 * 8); *omga_l = ++virvalue;
+			float* distance1 = (float*)(data + 4 + 5 * 9); *distance1 = ++virvalue;
+			float* distance2 = (float*)(data + 4 + 5 * 10); *distance2 = ++virvalue;
+			float* distance3 = (float*)(data + 4 + 5 * 11); *distance3 = ++virvalue;
+			float* distance4 = (float*)(data + 4 + 5 * 12); *distance4 = ++virvalue;
+			for(int k = 13; k < 13 + 9; ++k) { float* imu = (float*)(data + 4 + 5 * k); *imu = ++virvalue; }
+			uint *timestamp = (uint*)(data + 4 + 5 * 22); *timestamp = tsse;
 			asio::write(sport, asio::buffer(data, frameSize));
+
+			//3.2 DelayTimer
 			timer.expires_at(timer.expires_at() + 20ms);//50HZ
 			timer.async_wait(SendXQStatus);
+
+			//3.2
+			int64_t next_expiry_stamp = chrono::time_point_cast<chrono::milliseconds>(timer.expiry()).time_since_epoch().count();
+			int64_t current_stamp = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()).time_since_epoch().count();
+			spdlog::info("Timestamp{}: Theta={}   IdleTimeCost={}", *timestamp, *theta, next_expiry_stamp - current_stamp);
 		};
 		timer.async_wait(SendXQStatus);
 		ioc.run();
-	}
-
-	static int TestAsioTimerAndFunctionAndLambda(int argc, char** argv)
-	{
-		asio::io_context ioc;
-		asio::steady_timer timer(ioc, 5000ms);
-		std::function<void(error_code ec)> FuncCallback;
-		FuncCallback = [&](error_code ec)->void
-		{
-			static int num = 0;
-			spdlog::info("{}: {}", ++num, tsse);
-			//this_thread::sleep_for(3000ms);
-			timer.expires_at(timer.expires_at() + 2000ms);//回调函数执行多于2秒这里设置两秒就没意义(相当于没设置因为定时器已终止)
-			timer.async_wait(FuncCallback);//回调函数执行N秒, 定时器延长时间多于N秒才有意义, 否则等同于递归调用
-		};
-		timer.async_wait(FuncCallback);//run this callback after 5 seconds
-		ioc.run();
-		return 0;
 	}
 };
