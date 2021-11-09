@@ -9,9 +9,9 @@ public://XQ4Node
 	XQ4IO xq4io;
 	XQ4ROS(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
 	{ 
-		if (port.empty()) { stats.data = "Error: serial port cannot be empty and try again by service"; return; }
-		if (xq4io.open(port)) { stats.data = fmt::format("Error: open {} failed and try again by service", port); }
-		else stats.data = fmt::format("Info: open {} done", port);
+		if (port.empty()) stats.data = "Error: serial port cannot be empty and try again by service";
+		else if (xq4io.open(port)) stats.data = fmt::format("Info: open {} done", port); 
+		else stats.data = fmt::format("Error: open {} failed and try again by service", port);
 		pubXQ4Status->publish(stats); spdlog::info(stats.data);
 	}
 

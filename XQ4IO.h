@@ -51,7 +51,7 @@ public:
 	}
 
 public:
-	bool getLatest(Object** object, int chnId, int msTimeout = 1000, int msSleep = 2)
+	bool getLatest(Object** object, int chnId, int msTimeout = 1000, int msSleep = 5)
 	{
 		if (state != true) { spdlog::error("wrong state"); return false; }
 		for (int64 t0 = tsms; tsms - t0 < msTimeout;)
@@ -180,7 +180,7 @@ public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 		asio::write(sport, asio::buffer(data, action == 0 ? 5 : 6));
 	}
 
-	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }	
+	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 1000, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }	
 	string strDBG;
 
 private:
