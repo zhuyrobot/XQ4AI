@@ -28,7 +28,7 @@ public://ManuPort //ros2 service call /XQ/ClosePort std_srvs/srv/Trigger "{}"
 			res->message = stats.data; pubXQ4Status->publish(stats); spdlog::info(stats.data);
 		});
 
-	//ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: 'COM2'}"
+	//ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{cmd: 'COM2'}"
 	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvManuPort = create_service<ams_xq::srv::XQ4Serve>("OpenPort",
 		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
@@ -38,7 +38,7 @@ public://ManuPort //ros2 service call /XQ/ClosePort std_srvs/srv/Trigger "{}"
 			res->msg = stats.data; pubXQ4Status->publish(stats); spdlog::info(stats.data);
 		});
 
-public://ManuCar //ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: 'T'}" //T/R/I
+public://ManuCar //ros2 service call /XQ/SetMode ams_xq/srv/XQ4Serve "{cmd: 'T'}" //T/R/I
 	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvSetMode = create_service<ams_xq::srv::XQ4Serve>("SetMode",
 		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
@@ -51,7 +51,7 @@ public://ManuCar //ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: 'T'
 			}
 		});
 
-	//ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: '1'}" //0/1/2
+	//ros2 service call /XQ/RunSensor ams_xq/srv/XQ4Serve "{cmd: '1'}" //0/1/2
 	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvRunSensor = create_service<ams_xq::srv::XQ4Serve>("RunSensor",
 		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{
@@ -64,7 +64,7 @@ public://ManuCar //ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve "{str: 'T'
 			}
 		});
 
-	//ros2 service call -r 1 /XQ/RunMotor ams_xq/srv/XQ4Serve "{str: 'FF22'}" //forward50 //SS22 for brake50
+	//ros2 service call -r 1 /XQ/RunMotor ams_xq/srv/XQ4Serve "{cmd: 'FF22'}" //forward50 //SS22 for brake50
 	rclcpp::Service<ams_xq::srv::XQ4Serve>::SharedPtr srvRunMotor = create_service<ams_xq::srv::XQ4Serve>("RunMotor",
 		[this](const ams_xq::srv::XQ4Serve::Request::SharedPtr req, ams_xq::srv::XQ4Serve::Response::SharedPtr res)->void
 		{

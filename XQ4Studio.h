@@ -41,7 +41,9 @@ public:
 		gridLayoutMain->addWidget(pushButtonStartXQ4ROS, 9, 0, 1, 3);
 		gridLayoutMain->addWidget(pushButtonStartRPLidarROS, 10, 0, 1, 3);
 		gridLayoutMain->addWidget(pushButtonStartXQ4Simulator, 11, 0, 1, 3);
-		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 12, 1);
+		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 11, 2);
+		gridLayoutMain->addWidget(comboBoxROS2CMD, 11, 3, 1, 1);
+		gridLayoutMain->addWidget(pushButtonROS2Call, 11, 4, 1, 1);
 		{
 			//1.GetAllSerPorts
 			QList<QSerialPortInfo> listSerialPortInfo = QSerialPortInfo::availablePorts();
@@ -52,6 +54,13 @@ public:
 			spinBoxAngularSpeed->setRange(0, 100); spinBoxAngularSpeed->setValue(10);
 			spinBoxBrakeSpeed->setRange(0, 100); spinBoxBrakeSpeed->setValue(10);
 			comboBoxWorkMode->addItems(QStringList() << "DBG" << "Run" << "Reset");
+			comboBoxROS2CMD->setEditable(true);
+			comboBoxROS2CMD->addItem("ros2 service call /XQ/ClosePort std_srvs/srv/Trigger \"{}\"");
+			comboBoxROS2CMD->addItem("ros2 service call /XQ/OpenPort ams_xq/srv/XQ4Serve \"{cmd: 'COM2'}\"");
+			comboBoxROS2CMD->addItem("ros2 service call /XQ/SetMode ams_xq/srv/XQ4Serve \"{cmd: 'T'}\"");
+			comboBoxROS2CMD->addItem("ros2 service call /XQ/RunSensor ams_xq/srv/XQ4Serve \"{cmd: '1'}\"");
+			comboBoxROS2CMD->addItem("ros2 service call -r 1 /XQ/RunMotor ams_xq/srv/XQ4Serve \"{cmd: 'FF22'}\"");
+			comboBoxROS2CMD->addItem("ros2 topic pub -r 1 /XQ/RunCar std_msgs/msg/String \"{data: 'f2'}\"");
 
 			//3.AdjustGUI
 			QList<QWidget*> children = this->findChildren<QWidget*>();
@@ -82,6 +91,7 @@ public:
 			connect(pushButtonPlusMotors, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
 			connect(pushButtonMinusMotors, &QPushButton::released, [this]()->void { xq4io.runMotor('S', 'S', char(spinBoxBrakeSpeed->value()), char(spinBoxBrakeSpeed->value())); });
 			connect(comboBoxWorkMode, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index)->void { char modes[3] = { 'T', 'R', 'I' }; xq4io.setMode(modes[index]); });
+			connect(pushButtonROS2Call, &QPushButton::clicked, [this]()->void { QProcess::execute(comboBoxROS2CMD->currentText()); });
 			connect(pushButtonOpen, &QPushButton::clicked, [this]()->void
 				{
 					if (xq4io.opened())
@@ -149,6 +159,8 @@ public:
 	QPushButton* pushButtonStartRPLidarROS = new QPushButton("Start RPLidarROS", this);
 	QPushButton* pushButtonStartXQ4Simulator = new QPushButton("Start XQ4Simulator", this);
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
+	QComboBox* comboBoxROS2CMD = new QComboBox(this);
+	QPushButton* pushButtonROS2Call = new QPushButton("Call", this);
 	QTimer* timerCarStatus = new QTimer(this);
 };
 
