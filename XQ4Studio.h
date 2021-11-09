@@ -1,4 +1,4 @@
-﻿#include "XQ4IO.h"
+﻿#include "XQ4ROS.h"
 #include <QtGui/QtGui>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
@@ -39,8 +39,9 @@ public:
 		gridLayoutMain->addWidget(pushButtonPlusMotors, 8, 0);
 		gridLayoutMain->addWidget(pushButtonMinusMotors, 8, 2);
 		gridLayoutMain->addWidget(pushButtonStartXQ4ROS, 9, 0, 1, 3);
-		gridLayoutMain->addWidget(pushButtonStartXQ4Sim, 10, 0, 1, 3);
-		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 11, 1);
+		gridLayoutMain->addWidget(pushButtonStartRPLidarROS, 10, 0, 1, 3);
+		gridLayoutMain->addWidget(pushButtonStartXQ4Simulator, 11, 0, 1, 3);
+		gridLayoutMain->addWidget(plainTextEditCarStatus, 0, 3, 12, 1);
 		{
 			//1.GetAllSerPorts
 			QList<QSerialPortInfo> listSerialPortInfo = QSerialPortInfo::availablePorts();
@@ -113,7 +114,7 @@ public:
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
 				});
 			connect(pushButtonStartXQ4ROS, &QPushButton::pressed, [this]()->void { });
-			connect(pushButtonStartXQ4Sim, &QPushButton::pressed, [this]()->void 
+			connect(pushButtonStartXQ4Simulator, &QPushButton::pressed, [this]()->void 
 				{ 	
 					QList<QSerialPortInfo> listSerialPortInfo = QSerialPortInfo::availablePorts();
 					QStringList items; for (int k = 0; k < listSerialPortInfo.size(); ++k)items.push_back(listSerialPortInfo[k].portName());
@@ -145,31 +146,10 @@ public:
 	QPushButton* pushButtonPlusMotors = new QPushButton("Plus motors", this);
 	QPushButton* pushButtonMinusMotors = new QPushButton("Minus motors", this);
 	QPushButton* pushButtonStartXQ4ROS = new QPushButton("Start XQ4ROS", this);
-	QPushButton* pushButtonStartXQ4Sim = new QPushButton("Start XQ4Simulator", this);
+	QPushButton* pushButtonStartRPLidarROS = new QPushButton("Start RPLidarROS", this);
+	QPushButton* pushButtonStartXQ4Simulator = new QPushButton("Start XQ4Simulator", this);
 	QPlainTextEdit* plainTextEditCarStatus = new QPlainTextEdit("", this);
 	QTimer* timerCarStatus = new QTimer(this);
 };
 
-int main(int argc, char** argv)
-{
-	std::map<string, function<void(int, char**)>> funcs;
-	funcs["XQ4Studio"] = XQ4Studio::RunMe;
-	funcs["XQ4Simulator"] = [](int argc, char** argv)->void
-	{
-		if (argc < 2) spdlog::error("format: appname sport_name");
-		else XQ4IO::XQ4Sim(argv[1]);
-	};
-	if (argc < 2)
-	{
-		string str = fmt::format("Format: appname cmdname params\n\nSupport: {}  {}\n\nPress any key to run: {}", funcs.begin()->first, (++funcs.begin())->first, (++funcs.begin())->first);
-		cout << str; getchar();
-		XQ4Studio::RunMe(argc, argv);
-	}
-	else
-	{
-		int argn = argc - 1;
-		vector<char*> argp; for (int k = 1; k < argc; ++k) argp.push_back(argv[k]);
-		funcs[argv[1]](argn, argp.data());
-	}
-	return 0;
-}
+//int main(int argc, char** argv) { XQ4Studio::RunMe(argc, argv); return 0; }

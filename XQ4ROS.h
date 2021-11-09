@@ -124,4 +124,4 @@ public:
 	}
 };
 
-int main(int argc, char** argv) { XQ4ROS::RunMe(argc, argv); return 0; }
+//int main(int argc, char** argv) { XQ4ROS::RunMe(argc, argv); return 0; }

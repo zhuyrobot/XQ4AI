@@ -9,6 +9,5 @@ endif()
 include(${COMMON_CMAKE})
 
 #2.Pro
-add_executable(XQ4ROS CMakeLists.txt XQ4IO.h XQ4ROS.cpp)
-add_executable(XQ4Studio CMakeLists.txt XQ4IO.h XQ4Studio.cpp)
-add_executable(XQ4ZDeprecatedQTRC XQ4ZDeprecatedQTRC.cpp)
+file(GLOB XQ4SRC LIST_DIRECTORIES false ${CMAKE_SOURCE_DIR}/*.h)
+add_executable(XQ4AI CMakeLists.txt ${XQ4SRC} XQ4AI.cpp)
