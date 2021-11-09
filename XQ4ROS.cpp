@@ -3,11 +3,11 @@
 #include <ams_xq/srv/xq4_serve.hpp>
 #include "XQ4IO.h"
 
-class XQ4Robot : public rclcpp::Node
+class XQ4ROS : public rclcpp::Node
 {
 public://XQ4Node
 	XQ4IO xq4io;
-	XQ4Robot(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
+	XQ4ROS(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
 	{ 
 		if (port.empty()) return;
 		if (xq4io.open(port)) spdlog::info("Open {} failed", port);
@@ -81,7 +81,7 @@ public:
 	{ 
 		rclcpp::init(argc, argv);
 
-		auto server = std::make_shared<XQ4Robot>();
+		auto server = std::make_shared<XQ4ROS>();
 		vector<string> portnames;
 		for (int k = 0; k < 100; ++k) portnames.push_back("/dev/ttyUSB" + std::to_string(k));
 		for (int k = 0; k < 100; ++k) portnames.push_back("COM" + std::to_string(k));
@@ -95,4 +95,4 @@ public:
 	}
 };
 
-int main(int argc, char** argv) { XQ4Robot::RunMe(argc, argv); return 0; }
+int main(int argc, char** argv) { XQ4ROS::RunMe(argc, argv); return 0; }

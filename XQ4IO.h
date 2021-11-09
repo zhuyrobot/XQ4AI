@@ -154,7 +154,7 @@ public://2.Config
 	inline string name() { return sname; }
 
 public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
-	const char heads[3] = { char(0xcd), char(0xeb), char(0xd7) };
+	const char heads[3] = { char(0xcd), char(0xeb), char(0xd7)};
 	inline void setMode(char mode/*T/R/I*/)//T=debug   R=work   I=reset
 	{
 		if (!sport.is_open()) { spdlog::critical("Serial port not openned: mode={}", mode); return; }
@@ -180,7 +180,8 @@ public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 		asio::write(sport, asio::buffer(data, action == 0 ? 5 : 6));
 	}
 
-	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }
+	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 20, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }	
+	string strDBG;
 
 private:
 	static const int headSize = 4;
@@ -191,62 +192,53 @@ private:
 	static const int frameSize = dataSize + headSize;
 	void read2decode()
 	{
-		vector<char> serArr;
-		int readPos = 0;
-		const int maxArrSize = frameSize * 50 * 60; //Allow to lose several frames every one minute
-		const int maxBufSize = 2 * sizeof(XQ4Frame) + 8;
-		char bufReader[maxBufSize];
+		int64_t frameTotal = 0;//from start 
+		int64_t frameCount = 0;//in one second
+		int64_t firstStamp = tsms;
+		int64_t preStamp = firstStamp;
 		while (keeping)
 		{
-			this_thread::sleep_for(chrono::milliseconds(msTimeout));
-			//1.Read serialport
-			error_code ec;
-			int num = sport.read_some(asio::buffer(bufReader, maxBufSize), ec);
-			if (num == 0) spdlog::error("code: {}\tmsg: {}", ec.value(), ec.message());
-			else for (int k = 0; k < num; ++k) serArr.push_back(bufReader[k]);
-
-			//2.No need to read if less than one full frame
-			if (serArr.size() < readPos + frameSize) { spdlog::warn("frameSize is small and this should not occur often"); continue; }
-			if (serArr.size() < 2 * frameSize) { spdlog::warn("Intial frameSize must be double for maxArrSize switch"); continue; }
-
-			//3.Find data head
-			int curPos = readPos;
-			for (; curPos < serArr.size(); ++curPos)
+			//1.ReadHead
+			int workable = 0;
+			for (int k = 0; k < 4; ++k)
 			{
-#if 1
-				if ((serArr[curPos] == heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] != heads[2]) ||
-					(serArr[curPos] != heads[0] && serArr[curPos + 1] == heads[1] && serArr[curPos + 2] != heads[2]) ||
-					(serArr[curPos] != heads[0] && serArr[curPos + 1] != heads[1] && serArr[curPos + 2] == heads[2]))
-					spdlog::warn("data transition may have some problems and timestamp={}s", time(0));
-#endif
-				if (serArr[curPos] != heads[0]) continue;
-				if (serArr[curPos + 1] != heads[1]) continue;
-				if (serArr[curPos + 2] != heads[2]) continue;
-				curPos += headSize;//Let curPos be dataPos if find the header
-				break;
+				error_code ec;
+				char headFlag;
+				int num = sport.read_some(asio::buffer(&headFlag, 1), ec);
+				if (num != 1) spdlog::error(strDBG = fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				else if (headFlag == heads[k]) ++workable; //check headFlag
+				else if (headFlag == dataSize) ++workable; //check dataSize
 			}
 
-			//4.No need to read if less than one data frame
-			if (serArr.size() < curPos + dataSize) { spdlog::warn("dataSize is small and this should not occur often"); continue; }
-
-			//5.Read data
-			XQ4IO::XQ4Frame* frame;
-			int64 tsPos = cirFrames.lockWritten(&frame);
-			if (tsPos != -1)
+			//2.ReadData
+			if (workable == 4)
 			{
-				for (int k = 0; k < itemCount; ++k) memcpy((int*)frame + k, serArr.data() + curPos + itemSizeEx * k, itemSize);
-				readPos = curPos + dataSize; //cout << endl << frame->print() << endl << endl;
-				cirFrames.unlockWritten(tsPos);
+				error_code ec;
+				char dataDetail[dataSize];
+				int num = asio::read(sport, asio::buffer(&dataDetail, dataSize), ec);
+				if (num != dataSize) spdlog::error(strDBG = fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				else
+				{
+					XQ4IO::XQ4Frame* frame;
+					int64 tsPos = cirFrames.lockWritten(&frame);
+					for (int k = 0; k < itemCount; ++k) memcpy((int*)frame + k, dataDetail + itemSizeEx * k, itemSize);
+					//cout << endl << frame->print() << endl;
+					cirFrames.unlockWritten(tsPos);
+					++frameTotal;
+					++frameCount;
+				}
 			}
 
-			//6.Explosion protection
-			if (serArr.size() > maxArrSize) 
-			{ 
-				int len = serArr.size() - readPos;
-				vector<char> remains(len);
-				memcpy(remains.data(), serArr.data() + readPos, sizeof(char) * len);
-				serArr = remains;
-				readPos = 0; 
+			//3.CheckFPS
+			int64_t curStamp = tsms;
+			int64_t diffDuration = curStamp - preStamp;
+			if (diffDuration > 1000)
+			{
+				float fps = frameCount * 1000.f / diffDuration;
+				if (fps < 49) spdlog::warn(strDBG = fmt::format("Line{}Warn: CurrentFPS={}", __LINE__, fps));
+				frameCount = 0;
+				preStamp = curStamp;
+				if ((curStamp - firstStamp) / 1000 % 3 == 0) spdlog::info(strDBG = fmt::format("Line{}Info: AverageFPS={}", __LINE__, frameTotal * 1000.f / (curStamp - firstStamp)));
 			}
 		}
 	}
@@ -275,9 +267,10 @@ public:
 		SendXQStatus = [&](error_code ec)->void
 		{
 			//3.1 RunTask
+			int64_t last_expiry_stamp = chrono::time_point_cast<chrono::milliseconds>(timer.expiry()).time_since_epoch().count();
 			static int virvalue = -1; virvalue = virvalue + 100 > INT_MAX ? -1 : virvalue;
 			char data[frameSize] = { 0 };
-			data[0] = 0xcd; data[1] = 0xeb; data[2] = 0xd7;
+			data[0] = 0xcd; data[1] = 0xeb; data[2] = 0xd7; data[3] = dataSize;
 			int *status = (int*)(data + 4); *status = 1;
 			float* power = (float*)(data + 4 + 5 * 1); *power = 11;
 			float* theta = (float*)(data + 4 + 5 * 2); *theta = ++virvalue;
@@ -299,10 +292,10 @@ public:
 			timer.expires_at(timer.expires_at() + 20ms);//50HZ
 			timer.async_wait(SendXQStatus);
 
-			//3.2
+			//3.3 PrintTime
 			int64_t next_expiry_stamp = chrono::time_point_cast<chrono::milliseconds>(timer.expiry()).time_since_epoch().count();
 			int64_t current_stamp = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()).time_since_epoch().count();
-			spdlog::info("Timestamp{}: Theta={}   IdleTimeCost={}", *timestamp, *theta, next_expiry_stamp - current_stamp);
+			spdlog::info("Timestamp{}: TaskTimeCost={}   IdleTimeCost={}   Theta={}", *timestamp, next_expiry_stamp - current_stamp, current_stamp - last_expiry_stamp, *theta);
 		};
 		timer.async_wait(SendXQStatus);
 		ioc.run();

@@ -96,7 +96,7 @@ public:
 						{
 							pushButtonOpen->setText("Close");
 							spdlog::info("{} openned with success", xq4io.name());
-							timerCarStatus->start(200);
+							timerCarStatus->start(50);
 						}
 						else
 						{
@@ -109,7 +109,7 @@ public:
 				{
 					XQ4IO::XQ4Frame* msg = 0;
 					xq4io.getStatus(&msg);
-					if (msg != 0) plainTextEditCarStatus->setPlainText(msg->print().c_str());
+					if (msg != 0) plainTextEditCarStatus->setPlainText((msg->print() + xq4io.strDBG).c_str());
 					else plainTextEditCarStatus->setPlainText(fmt::format("No data received {}", tsms).c_str());
 				});
 			connect(pushButtonStartXQ4ROS, &QPushButton::pressed, [this]()->void { });
