@@ -9,5 +9,8 @@ endif()
 include(${COMMON_CMAKE})
 
 #2.Pro
-file(GLOB XQ4SRC LIST_DIRECTORIES false ${CMAKE_SOURCE_DIR}/*.h)
-add_executable(XQ4AI CMakeLists.txt ${XQ4SRC} XQ4AI.cpp)
+file(GLOB sources LIST_DIRECTORIES false ${CMAKE_SOURCE_DIR}/*)
+file(GLOB XQ4SDK LIST_DIRECTORIES false ${CMAKE_SOURCE_DIR}/XQ4SDK/*)
+source_group("sources" FILES ${sources})
+source_group("XQ4SDK" FILES ${XQ4SDK})
+add_executable(${PROJECT_NAME} ${XQ4SDK} ${sources})

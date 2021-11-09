@@ -1,4 +1,4 @@
-﻿#include "XQ4Studio.h"
+﻿#include "XQ4SDK/XQ4Studio.h"
 
 int main(int argc, char** argv)
 {
