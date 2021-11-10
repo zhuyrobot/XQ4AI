@@ -1,8 +1,10 @@
 ﻿#include "XQ4SDK/XQ4Studio.h"
+#include "RPLSDK/rplidar_scan_publisher.h"
 
 int main(int argc, char** argv)
 {
 	std::map<string, function<void(int, char**)>> funcs;
+	funcs["RPLidarROS"] = RPLidarScanPublisher::RunMe;
 	funcs["XQ4ROS"] = XQ4ROS::RunMe;
 	funcs["XQ4Studio"] = XQ4Studio::RunMe;
 	funcs["XQ4Simulator"] = [](int argc, char** argv)->void
