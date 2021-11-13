@@ -7,13 +7,7 @@ class XQ4ROS : public rclcpp::Node
 {
 public://XQ4Node
 	XQ4IO xq4io;
-	XQ4ROS(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) 
-	{ 
-		if (port.empty()) stats.data = "Error: serial port cannot be empty and try again by service";
-		else if (xq4io.open(port)) stats.data = fmt::format("Info: open {} done", port); 
-		else stats.data = fmt::format("Error: open {} failed and try again by service", port);
-		pubXQ4Status->publish(stats); spdlog::info(stats.data);
-	}
+	XQ4ROS(string port = "", string nn = "XQ4Server", string ns = "XQ") : Node(nn, ns) {}
 
 public://PubStatus
 	std_msgs::msg::String stats;
@@ -92,10 +86,10 @@ public://Update
 			//1.CheckPortOpen
 			if(!xq4io.opened()) 
 			{ 
-				this_thread::sleep_for(2000ms); 
-				stats.data = "Error: no port opened. XQ4ROS will try open one every 2000ms. You can open it by service if knowing port name";
-				pubXQ4Status->publish(stats); spdlog::info(stats.data);
-				TryOpenOneSport(xq4io);
+				this_thread::sleep_for(1000ms); 
+				stats.data = "Error: no port opened.XQ4ROS will try open one every 2000ms.You can open it by service if knowing port name";
+				pubXQ4Status->publish(stats); spdlog::error(stats.data);
+				CloseCurrentOpenAnotherSPort(xq4io);
 				return;
 			}
 
@@ -107,13 +101,14 @@ public://Update
 			if (frame == 0)
 			{
 				++nFailedFrame;
-				stats.data = "Error: failed to get XQ4Status.";
-				if (nFailedFrame > 10)
+				stats.data = fmt::format("Error: failed to get XQ4Status from {}", xq4io.name());
+				if (nFailedFrame > 3)
 				{
-					stats.data += ". XQ4ROS will try open one.";
-					TryOpenOneSport(xq4io);
+					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another one.";
+					CloseCurrentOpenAnotherSPort(xq4io);
+					nFailedFrame = 0;
 				}
-				pubXQ4Status->publish(stats); spdlog::info(stats.data);
+				pubXQ4Status->publish(stats); spdlog::error(stats.data);
 				return;
 			}
 			else nFailedFrame = 0;
@@ -121,17 +116,17 @@ public://Update
 			//3.CheckBeXQ4Port
 			static int64_t nInvalidFrame = 0;
 			memcpy(&rosFrame, frame, sizeof(rosFrame));
-			if (rosFrame.status < 0 || rosFrame.status > 1 || rosFrame.power < 9.f || rosFrame.power > 12.f)
+			if (rosFrame.status < 0 || rosFrame.status > 1 || rosFrame.power < 8.f || rosFrame.power > 13.f)
 			{
 				++nInvalidFrame;
-				stats.data = "Error: invalid frame.";
-				if (nFailedFrame > 25) //50HZ
+				stats.data = fmt::format("Error: invalid frame from {}", xq4io.name());
+				if (nFailedFrame > 10)
 				{
-					stats.data += ". It is possible to connect one wrong port. XQ4ROS will close current one and try open another one.";
-					xq4io.close();
-					TryOpenOneSport(xq4io);
+					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another one.";
+					CloseCurrentOpenAnotherSPort(xq4io);
+					nInvalidFrame = 0;
 				}
-				pubXQ4Status->publish(stats); spdlog::info(stats.data);
+				pubXQ4Status->publish(stats); spdlog::error(stats.data);
 			}
 			else nInvalidFrame = 0;
 
@@ -140,7 +135,7 @@ public://Update
         });
 
 public:
-	static void TryOpenOneSport(XQ4IO& xq4io, string priorSPort = "")
+	static void CloseCurrentOpenAnotherSPort(XQ4IO& xq4io, string priorSPort = "")
 	{
 		static int nport = 0;
 		if (xq4io.opened()) xq4io.close();
@@ -157,7 +152,7 @@ public:
 	{
 		rclcpp::init(argc, argv);
 		auto server = std::make_shared<XQ4ROS>();
-		TryOpenOneSport(server->xq4io, argc > 1 ? argv[1] : "");
+		CloseCurrentOpenAnotherSPort(server->xq4io, argc > 1 ? argv[1] : "");
 		rclcpp::spin(server);
 		rclcpp::shutdown();
 	}

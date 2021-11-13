@@ -181,7 +181,6 @@ public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 	}
 
 	inline bool getStatus(XQ4Frame **frame, int chnId = 0, int msTimeout = 1000, int msSleep = 5) { return cirFrames.getLatest(frame, chnId, msTimeout, msSleep); }	
-	string strDBG;
 
 private:
 	static const int headSize = 4;
@@ -205,7 +204,7 @@ private:
 				error_code ec;
 				char headFlag;
 				int num = sport.read_some(asio::buffer(&headFlag, 1), ec);
-				if (num != 1) spdlog::error(strDBG = fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				if (num != 1) spdlog::error(fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
 				else if (headFlag == heads[k]) ++workable; //check headFlag
 				else if (headFlag == dataSize) ++workable; //check dataSize
 			}
@@ -216,7 +215,7 @@ private:
 				error_code ec;
 				char dataDetail[dataSize];
 				int num = asio::read(sport, asio::buffer(&dataDetail, dataSize), ec);
-				if (num != dataSize) spdlog::error(strDBG = fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				if (num != dataSize) spdlog::error(fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
 				else
 				{
 					XQ4IO::XQ4Frame* frame;
@@ -235,10 +234,10 @@ private:
 			if (diffDuration > 1000)
 			{
 				float fps = frameCount * 1000.f / diffDuration;
-				if (fps < 49) spdlog::warn(strDBG = fmt::format("Line{}Warn: CurrentFPS={}", __LINE__, fps));
+				if (fps < 49) spdlog::warn(fmt::format("Line{}Warn: CurrentFPS={:.2f} SPort={}", __LINE__, fps, sname));
 				frameCount = 0;
 				preStamp = curStamp;
-				if ((curStamp - firstStamp) / 1000 % 3 == 0) spdlog::info(strDBG = fmt::format("Line{}Info: AverageFPS={}", __LINE__, frameTotal * 1000.f / (curStamp - firstStamp)));
+				if ((curStamp - firstStamp) / 1000 % 3 == 0) spdlog::info(fmt::format("Line{}Info: AverageFPS={:.2f} SPort={}", __LINE__, frameTotal * 1000.f / (curStamp - firstStamp), sname));
 			}
 		}
 	}
