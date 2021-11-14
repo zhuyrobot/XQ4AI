@@ -87,7 +87,7 @@ public://Update
 			if(!xq4io.opened()) 
 			{ 
 				this_thread::sleep_for(1000ms); 
-				stats.data = "No port opened.XQ4ROS will try open one every 2000ms.You can open it by service if knowing port name";
+				stats.data = "No port opened.XQ4ROS will try open another ones(0~99) every 1000ms.You can open it by service if knowing port name";
 				pubXQ4Status->publish(stats); SPDLOG_ERROR(stats.data);
 				CloseCurrentOpenAnotherSPort(xq4io);
 				return;
@@ -104,7 +104,7 @@ public://Update
 				stats.data = fmt::format("Failed to get XQ4Status from {}", xq4io.name());
 				if (nFailedFrame > 3)
 				{
-					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another one.";
+					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another ones(0~99).";
 					CloseCurrentOpenAnotherSPort(xq4io);
 					nFailedFrame = 0;
 				}
@@ -122,7 +122,7 @@ public://Update
 				stats.data = fmt::format("Invalid frame from {}", xq4io.name());
 				if (nFailedFrame > 10)
 				{
-					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another one.";
+					stats.data += ".It is possible to connect one wrong port.XQ4ROS will close current one and try open another ones(0~99).";
 					CloseCurrentOpenAnotherSPort(xq4io);
 					nInvalidFrame = 0;
 				}
