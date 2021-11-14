@@ -3,6 +3,7 @@
 
 int main(int argc, char** argv)
 {
+	spdlog::set_pattern("%l-%s-%#: %v");
 	std::map<string, function<void(int, char**)>> funcs;
 	funcs["RPLidarROS"] = RPLidarScanPublisher::RunMe;
 	funcs["XQ4ROS"] = XQ4ROS::RunMe;

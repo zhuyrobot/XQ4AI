@@ -33,7 +33,7 @@ public:
 public:
 	virtual bool init()
 	{
-		if (state == true) { spdlog::info("zero operation"); return true; }
+		if (state == true) { SPDLOG_INFO("Zero operation"); return true; }
 		memset(objects, 0, sizeof(objects));
 		memset(readPos, 0, sizeof(readPos));
 		memset(&writePos, 0, sizeof(writePos));
@@ -42,7 +42,7 @@ public:
 	}
 	virtual bool deinit()
 	{
-		if (state == false) { spdlog::info("zero operation"); return true; }
+		if (state == false) { SPDLOG_INFO("Zero operation"); return true; }
 		memset(objects, 0, sizeof(objects));
 		memset(readPos, 0, sizeof(readPos));
 		memset(&writePos, 0, sizeof(writePos));
@@ -53,7 +53,7 @@ public:
 public:
 	bool getLatest(Object** object, int chnId, int msTimeout = 1000, int msSleep = 5)
 	{
-		if (state != true) { spdlog::error("wrong state"); return false; }
+		if (state != true) { SPDLOG_ERROR("Wrong state"); return false; }
 		for (int64 t0 = tsms; tsms - t0 < msTimeout;)
 		{
 			int64 availablePos = writePos;
@@ -70,7 +70,7 @@ public:
 	}
 	int64 lockWritten(Object** object)
 	{
-		if (state != true) { spdlog::error("wrong state"); return -1; }
+		if (state != true) { SPDLOG_ERROR("Wrong state"); return -1; }
 		int64 absolutePos = writePos;
 		int64 relativePos = ++absolutePos % nbuf;
 		*object = objects + relativePos;
@@ -78,7 +78,7 @@ public:
 	}
 	int64 unlockWritten(int64 absolutePos)
 	{
-		if (state != true) { spdlog::error("wrong state"); return -1; }
+		if (state != true) { SPDLOG_ERROR("Wrong state"); return -1; }
 		return (writePos = absolutePos);
 	}
 };
@@ -157,25 +157,25 @@ public://3.Write //char(0)=int(48)  char(X)=int(48+X)  int(X)=char(X-48)
 	const char heads[3] = { char(0xcd), char(0xeb), char(0xd7)};
 	inline void setMode(char mode/*T/R/I*/)//T=debug   R=work   I=reset
 	{
-		if (!sport.is_open()) { spdlog::critical("Serial port not openned: mode={}", mode); return; }
+		if (!sport.is_open()) { SPDLOG_ERROR("Serial port not openned: mode={}", mode); return; }
 		char data[5] = { heads[0], heads[1], heads[2], char(0x01), mode };
 		asio::write(sport, asio::buffer(data, 5));
 	}
 	inline void runCar(char action/*f/b/s/c/d*/, char velocity/*0~100*/)//f=move ahead   b=move back   s=brake   c=turn left   d=turn right
 	{
-		if (!sport.is_open()) { spdlog::critical("Serial port not openned: action={}   velocity={}", action, int(velocity)); return; }
+		if (!sport.is_open()) { SPDLOG_ERROR("Serial port not openned: action={}   velocity={}", action, int(velocity)); return; }
 		char data[6] = { heads[0], heads[1], heads[2], char(0x02), action, velocity };
 		asio::write(sport, asio::buffer(data, 6));
 	}
 	inline void runMotor(char action1/*F/B/S*/, char action2/*F/B/S*/, char velocity1/*0~100*/, char velocity2/*0~100*/)
 	{
-		if (!sport.is_open()) { spdlog::critical("Serial port not openned: action1={}   action2={}   velocity1={}   velocity2={}", action1, action2, int(velocity1), int(velocity2)); return; }
+		if (!sport.is_open()) { SPDLOG_ERROR("Serial port not openned: action1={}   action2={}   velocity1={}   velocity2={}", action1, action2, int(velocity1), int(velocity2)); return; }
 		char data[13] = { heads[0], heads[1], heads[2], char(0x09), char(0x74), action1, action2, 0x53, 0x53, velocity1, velocity2, char(0x00), char(0x00) };
 		asio::write(sport, asio::buffer(data, 13));
 	}
 	inline void runSensor(int action/*0=CalibIMU 1=EnableIR 2=DisableIR*/)
 	{
-		if (!sport.is_open()) { spdlog::critical("Serial port not openned: action={}", action == 0 ? "CalibIMU" : action == 1 ? "EnableIR" : "DisableIR"); return; }
+		if (!sport.is_open()) { SPDLOG_ERROR("Serial port not openned: action={}", action == 0 ? "CalibIMU" : action == 1 ? "EnableIR" : "DisableIR"); return; }
 		char data[6] = { heads[0], heads[1], heads[2], action == 0 ? char(0x01) : char(0x02), action == 0 ? char(0x43) : char(0x44), action == 2 ? char(0x00) : char(0x01) };
 		asio::write(sport, asio::buffer(data, action == 0 ? 5 : 6));
 	}
@@ -204,7 +204,7 @@ private:
 				error_code ec;
 				char headFlag;
 				int num = sport.read_some(asio::buffer(&headFlag, 1), ec);
-				if (num != 1) spdlog::error(fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				if (num != 1) SPDLOG_ERROR(fmt::format("num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
 				else if (headFlag == heads[k]) ++workable; //check headFlag
 				else if (headFlag == dataSize) ++workable; //check dataSize
 			}
@@ -215,7 +215,7 @@ private:
 				error_code ec;
 				char dataDetail[dataSize];
 				int num = asio::read(sport, asio::buffer(&dataDetail, dataSize), ec);
-				if (num != dataSize) spdlog::error(fmt::format("Line{}Exception: num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
+				if (num != dataSize) SPDLOG_ERROR(fmt::format("num={}, code={}, msg={}", __LINE__, num, ec.value(), ec.message()));
 				else
 				{
 					XQ4IO::XQ4Frame* frame;
@@ -234,10 +234,10 @@ private:
 			if (diffDuration > 1000)
 			{
 				float fps = frameCount * 1000.f / diffDuration;
-				if (fps < 49) spdlog::warn(fmt::format("Line{}Warn: CurrentFPS={:.2f} SPort={}", __LINE__, fps, sname));
+				if (fps < 49) SPDLOG_WARN(fmt::format("CurrentFPS={:.2f}, SPort={}", fps, sname));
 				frameCount = 0;
 				preStamp = curStamp;
-				if ((curStamp - firstStamp) / 1000 % 3 == 0) spdlog::info(fmt::format("Line{}Info: AverageFPS={:.2f} SPort={}", __LINE__, frameTotal * 1000.f / (curStamp - firstStamp), sname));
+				if ((curStamp - firstStamp) / 1000 % 3 == 0) SPDLOG_INFO(fmt::format("Line{}Info: AverageFPS={:.2f} SPort={}", __LINE__, frameTotal * 1000.f / (curStamp - firstStamp), sname));
 			}
 		}
 	}
@@ -250,7 +250,7 @@ public:
 		asio::io_service io;
 		asio::serial_port sport = asio::serial_port(io);
 		sport.open(sportname, ec);
-		if (ec.value() != 0) {spdlog::error("Open sport {} failed: {}", sportname, ec.message()); return; }
+		if (ec.value() != 0) {SPDLOG_ERROR("Open sport {} failed: {}", sportname, ec.message()); return; }
 
 		//2.SetPort
 		sport.set_option(asio::serial_port::baud_rate(115200));
@@ -294,7 +294,7 @@ public:
 			//3.3 PrintTime
 			int64_t next_expiry_stamp = chrono::time_point_cast<chrono::milliseconds>(timer.expiry()).time_since_epoch().count();
 			int64_t current_stamp = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()).time_since_epoch().count();
-			spdlog::info("Timestamp{}: TaskTimeCost={}   IdleTimeCost={}   Theta={}", *timestamp, next_expiry_stamp - current_stamp, current_stamp - last_expiry_stamp, *theta);
+			SPDLOG_INFO("Timestamp{}: TaskTimeCost={}   IdleTimeCost={}   Theta={}", *timestamp, next_expiry_stamp - current_stamp, current_stamp - last_expiry_stamp, *theta);
 		};
 		timer.async_wait(SendXQStatus);
 		ioc.run();

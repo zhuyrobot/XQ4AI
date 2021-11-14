@@ -99,19 +99,19 @@ public:
 						timerCarStatus->stop();
 						xq4io.close();
 						pushButtonOpen->setText("Open");
-						spdlog::info("{} closed with success", xq4io.name());
+						SPDLOG_INFO("{} closed with success", xq4io.name());
 					}
 					else
 					{
 						if (xq4io.open(comboBoxPorts->currentText().toStdString()))
 						{
 							pushButtonOpen->setText("Close");
-							spdlog::info("{} openned with success", xq4io.name());
+							SPDLOG_INFO("{} openned with success", xq4io.name());
 							timerCarStatus->start(50);
 						}
 						else
 						{
-							spdlog::error("{} openned with failure", xq4io.name());
+							SPDLOG_ERROR("{} openned with failure", xq4io.name());
 							QMessageBox::information(this, "", xq4io.name().c_str() + QString(" openned with failure"));
 						}
 					}
