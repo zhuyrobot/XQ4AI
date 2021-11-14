@@ -89,38 +89,77 @@ public://Update
 	rclcpp::Publisher<ams_xq::msg::XQ4Frame>::SharedPtr pubXQFrame = create_publisher<ams_xq::msg::XQ4Frame>("XQ4Frame", 10);
     rclcpp::TimerBase::SharedPtr TimerXQFrame = create_wall_timer(10ms, [&]()->void
         {
+			//1.CheckPortOpen
 			if(!xq4io.opened()) 
 			{ 
 				this_thread::sleep_for(2000ms); 
-				stats.data = "Error: no port opened. Please open it by service";
+				stats.data = "Error: no port opened. XQ4ROS will try open one every 2000ms. You can open it by service if knowing port name";
 				pubXQ4Status->publish(stats); spdlog::info(stats.data);
+				TryOpenOneSport(xq4io);
 				return;
 			}
+
+			//2.CheckCanRead
+			static int64_t nFailedFrame = 0;
 			XQ4IO::XQ4Frame *frame = 0;
             xq4io.getStatus(&frame);
 			ams_xq::msg::XQ4Frame rosFrame;
-			if(frame) memcpy(&rosFrame, frame, sizeof(rosFrame));
-			else
+			if (frame == 0)
 			{
-				stats.data = "Error: invalid frame \n\t(1)It is possible to connect one wrong port if this happens continuously";
-				stats.data += fmt::format("\n\t(2) Close current {} and open the right one", xq4io.name());
+				++nFailedFrame;
+				stats.data = "Error: failed to get XQ4Status.";
+				if (nFailedFrame > 10)
+				{
+					stats.data += ". XQ4ROS will try open one.";
+					TryOpenOneSport(xq4io);
+				}
+				pubXQ4Status->publish(stats); spdlog::info(stats.data);
+				return;
+			}
+			else nFailedFrame = 0;
+
+			//3.CheckBeXQ4Port
+			static int64_t nInvalidFrame = 0;
+			memcpy(&rosFrame, frame, sizeof(rosFrame));
+			if (rosFrame.status < 0 || rosFrame.status > 1 || rosFrame.power < 9.f || rosFrame.power > 12.f)
+			{
+				++nInvalidFrame;
+				stats.data = "Error: invalid frame.";
+				if (nFailedFrame > 25) //50HZ
+				{
+					stats.data += ". It is possible to connect one wrong port. XQ4ROS will close current one and try open another one.";
+					xq4io.close();
+					TryOpenOneSport(xq4io);
+				}
 				pubXQ4Status->publish(stats); spdlog::info(stats.data);
 			}
+			else nInvalidFrame = 0;
+
+			//4.PublishFrame
             pubXQFrame->publish(rosFrame);
         });
 
 public:
-	static void RunMe(int argc = 0, char** argv = 0) 
-	{ 
-		rclcpp::init(argc, argv);
+	static void TryOpenOneSport(XQ4IO& xq4io, string priorSPort = "")
+	{
+		static int nport = 0;
+		if (xq4io.opened()) xq4io.close();
+		if (!priorSPort.empty()) if (xq4io.open(priorSPort)) return;
+		for (int k = 0; k < 100; ++k, ++nport)
+		{
+			if (xq4io.open(fmt::format("/dev/ttyUSB{}", nport))) break;
+			if (xq4io.open(fmt::format("COM{}", nport))) break;
+			if (nport > 99) nport = 0;
+		}
+	}
 
+	static void RunMe(int argc = 0, char** argv = 0)
+	{
+		rclcpp::init(argc, argv);
 		auto server = std::make_shared<XQ4ROS>();
-		vector<string> portnames;
-		for (int k = 0; k < 100; ++k) portnames.push_back("/dev/ttyUSB" + std::to_string(k));
-		for (int k = 0; k < 100; ++k) portnames.push_back("COM" + std::to_string(k));
-		for (int k = 0; k < portnames.size(); ++k) if (server->xq4io.open(portnames[k])) break;
+		TryOpenOneSport(server->xq4io, argc > 1 ? argv[1] : "");
 		rclcpp::spin(server);
-		rclcpp::shutdown();	
+		rclcpp::shutdown();
 	}
 };
 
