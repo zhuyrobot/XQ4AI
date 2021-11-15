@@ -1,4 +1,0 @@
-char data #0=CalibIMU 1=EnableIR 2=DisableIR or 'T'=Debug 'R'=Work 'I'=Reset
----
-bool success
-string message

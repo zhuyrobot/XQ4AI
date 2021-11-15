@@ -12,15 +12,14 @@ if(WIN32)
 file(GLOB ROS2_LIBS LIST_DIRECTORIES false D:/app/ros2/lib/*.lib)
 endif(WIN32)
 link_libraries(${ROS2_LIBS})
+find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME} 
-"XQFrame.msg"
-"OpenPort.srv"
-"SetChar.srv"
-"SetChars.srv"
+"XQ4Frame.msg"
+"XQ4Serve.srv"
 )
 
   
 ###III.Export
-#ament_export_dependencies(rosidl_default_runtime)###???
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()###make this project found by other projects using find_package
